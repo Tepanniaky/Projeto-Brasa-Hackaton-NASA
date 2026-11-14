@@ -1,0 +1,202 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "authors": [
+        "Louis Giglio",
+        "Wilfrid Schroeder",
+        "Joanne V. Hall",
+        "Christopher O. Justice"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E001",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "https://earthdata.nasa.gov/s3fs-public/2023-09/MODIS_C6_C6.1_Fire_User_Guide_1.0.pdf"
+      },
+      "locator": "Tabela 11 e §8.4.2 (classes de confiança); §5.5.1 (nome CCC.VV); §7.1.1 (vieses < 8 dias); §7.2.4 (falha do Aqua, ago/2020)",
+      "source_type": "report",
+      "title": "MODIS Collection 6 and Collection 6.1 Active Fire Product User's Guide, Version 1.0",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": 2021
+    },
+    {
+      "authors": [
+        "Wilfrid Schroeder",
+        "Louis Giglio",
+        "Joanne Hall"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E002",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "https://earthdata.nasa.gov/s3fs-public/2025-06/VIIRS_C2_AF-375m_User_Guide_1.2.pdf"
+      },
+      "locator": "§2, classes 7–9 (confiança baixa: reflexo solar e Anomalia Magnética do Atlântico Sul); §6.1 (erro no campo Type)",
+      "source_type": "report",
+      "title": "Collection 2 VIIRS 375-m Active Fire Product User's Guide, Version 1.2",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": 2025
+    },
+    {
+      "authors": [
+        "NASA Earthdata"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E003",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "https://www.earthdata.nasa.gov/data/tools/firms/active-fire-data-attributes-modis-viirs"
+      },
+      "locator": "atributos acq_time (UTC), confidence, version, type",
+      "source_type": "webpage",
+      "title": "FIRMS: active fire data attributes (MODIS e VIIRS)",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": null
+    },
+    {
+      "authors": [
+        "OPP Team"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E004",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "web/public/data/real/manifest.json"
+      },
+      "locator": "campos qualidade, deriva_passagem; sha256 bf7bc080534d9f7b811d180855044ac28de1364a85e1c060c75789240887e997",
+      "source_type": "dataset",
+      "title": "BRASA: manifesto do processamento (manifest.json)",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": 2026
+    },
+    {
+      "authors": [
+        "OPP Team"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E005",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "web/public/data/real/harmonizacao.json"
+      },
+      "locator": "grades.*.avaliacao, comparabilidade; sha256 f704dc0f90aa2d3837fd25bf77e15b18599d6946a33d4c2b19a521a17f4e9b73",
+      "source_type": "dataset",
+      "title": "BRASA: harmonização experimental e avaliação (harmonizacao.json)",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": 2026
+    },
+    {
+      "authors": [
+        "OPP Team"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E006",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "web/public/data/real/auditoria_equipe.json"
+      },
+      "locator": "sintese_2022_2025_municipios_com_50_ou_mais; sha256 1714222d0388b2caf90dead9141ff1e4df075a7f90d0b9bfe8d5a37bf7a3be02",
+      "source_type": "dataset",
+      "title": "BRASA: auditoria da série da equipe (auditoria_equipe.json)",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": 2026
+    },
+    {
+      "authors": [
+        "NASA Science"
+      ],
+      "confidentiality": "public",
+      "evidence_id": "E007",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "https://science.nasa.gov/mission/aqua"
+      },
+      "locator": "texto sobre o fim das manobras de compensação de arrasto (dez/2021) e a deriva para passagens mais tarde",
+      "source_type": "webpage",
+      "title": "Aqua mission page",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": null
+    },
+    {
+      "authors": [
+        "OPP Team"
+      ],
+      "confidentiality": "restricted",
+      "evidence_id": "E008",
+      "identifiers": {
+        "doi": "",
+        "isbn": "",
+        "pmcid": "",
+        "pmid": "",
+        "url": "roteiro e dados para o projeto/Roteiro do front-end Calendário de Queimadas da Bahia.pdf"
+      },
+      "locator": "seção Resumo (afirmação de validação com erro médio de 2,2 %)",
+      "source_type": "other",
+      "title": "Roteiro do front-end: Calendário de Queimadas da Bahia",
+      "verification": {
+        "source_opened": true,
+        "status": "verified",
+        "verified_by": "agente de IA (Claude) na sessão de 2026-11-14; requer revisão humana da OPP Team",
+        "verified_on": "2026-11-14"
+      },
+      "year": 2026
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "product": "modis",
+      "year": 2024,
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/modis/2024/modis_2024_Brazil.csv",
+      "source_sha256": "b617f757e2b1279802412e71cd457f26a3714e21045fce2aaf25fee908a0c305",
+      "sha256_verified": true,
+      "http_last_modified": "Tue, 24 Jun 2025 16:49:24 GMT",
+      "retrieved_at_utc": "2026-11-14T14:31:37+00:00",
+      "source_rows": 527894,
+      "subset_file": "modis_2024-09-01_07_formosa.csv",
+      "subset_rows": 502,
+      "subset_sha256": "2a6de50ad42d7dd6dd402649ac6f8c9ebd6a3bf0d899bafa7efe46d57305ae77"
+    },
+    {
+      "product": "viirs-jpss1",
+      "year": 2024,
+      "source_url": "https://firms.modaps.eosdis.nasa.gov/data/country/viirs-jpss1/2024/viirs-jpss1_2024_Brazil.csv",
+      "source_sha256": "219e933850ceef91452f0d7722b6a0595edd52730674815a6c3fd695d03ebb46",
+      "sha256_verified": true,
+      "http_last_modified": "Tue, 24 Jun 2025 20:23:00 GMT",
+      "retrieved_at_utc": "2026-11-14T14:37:04+00:00",
+      "source_rows": 1988404,
+      "subset_file": "viirs-jpss1_2024-09-01_07_formosa.csv",
+      "subset_rows": 1769,
+      "subset_sha256": "0e7395aed3899634390696686c9d56667b2b3590cb52b0467c11d559ab1aa6d9"
+    }
+  ],
+  "nota": "Exemplo pequeno de entrada: linhas reais copiadas sem alteração dos arquivos FIRMS verificados (SHA-256 da origem abaixo), recortadas em Formosa do Rio Preto e arredores, 1 a 7 de setembro de 2024."
+}

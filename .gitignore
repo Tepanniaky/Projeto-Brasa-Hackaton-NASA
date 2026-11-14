@@ -1,0 +1,21 @@
+# dependências e builds
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+pipeline/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.playwright-cli/
+
+# dados brutos grandes (regenerar com pipeline/brasa/fetch_firms.py); a malha IBGE é pequena e fica versionada
+data/raw/firms/
+data/raw/firms_bahia/
+data/raw/*.log
+data/interim/
+data/build_real.log
+
+
+# metadados de pasta do KDE (locais)
+.directory
