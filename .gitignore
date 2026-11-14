@@ -19,3 +19,6 @@ data/build_real.log
 
 # metadados de pasta do KDE (locais)
 .directory
+
+# pacote de handoff exportado do Claude Design (protótipo de referência, não é código da aplicação)
+aguardando-reposit-rio-e-arquivos/

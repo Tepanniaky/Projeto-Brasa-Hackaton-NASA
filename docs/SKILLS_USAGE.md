@@ -21,6 +21,16 @@ Sessão de 2026-11-14.
 | `impeccable`, `web-design-guidelines` | Não | A primeira baixa um executável e a segunda busca regras na internet a cada uso, como já alertava `SKILLS.md`. | — |
 | Context7 MCP | Não | Precisa de autorização (`/mcp`). As APIs foram conferidas no próprio pacote instalado: `maplibre-gl.d.ts` e o mecanismo do *worker*. | — |
 
+## Redesign 1a (2026-11-14)
+
+Implementação do pacote do Claude Design (`BRASA Redesign.dc.html`, direção 1a "Mesa de análise", só em português).
+
+| Skill | Usada? | Contribuição concreta | Onde |
+|---|---|---|---|
+| `dataviz` | Sim | O validador (`validate_palette.js`) reprovou as cores de sensor do tema escuro propostas no design (`#74abf3`/`#3fc79c`, fora da faixa de luminosidade para fundo escuro). Elas foram trocadas por `#5a96e2`/`#24ad82`, que passam em todas as checagens sobre `#24221e`. A rampa clara do MVP foi mantida porque passa; a rampa de calor escura do design reprova em "um só matiz" e em contraste do passo 1, e foi mantida de propósito, sempre acompanhada de legenda, dica e tabela. | `web/src/ui/styles.css` (cabeçalho) |
+| `maplibre-cartography` | Sim | Camadas próprias continuam abaixo do primeiro símbolo do mapa de fundo; o mapa de fundo escuro (OpenFreeMap `dark`) foi escolhido para que os rótulos do próprio estilo sigam legíveis; seleção por contorno, alerta por anel (não só cor). | `web/src/ui/MapView.tsx` |
+| `playwright-cli` | Formato aproveitado | Testes e2e atualizados para as abas e novos fluxos (restaurar, série anual arrastável, tema, modos do mapa, gaveta no celular). | `web/tests/e2e/brasa.spec.ts` |
+
 ## Instalações feitas
 
 **Nenhuma mudança global no sistema.** Tudo o que foi instalado ficou no projeto:
