@@ -52,8 +52,8 @@ export function HatchDefs() {
   return (
     <defs>
       <pattern id={HATCH_ID} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-        <rect width="6" height="6" fill="#f4efe6" />
-        <line x1="0" y1="0" x2="0" y2="6" stroke="#cbc1b2" strokeWidth="2.5" />
+        <rect width="6" height="6" fill="var(--zero)" />
+        <line x1="0" y1="0" x2="0" y2="6" stroke="var(--linha-forte)" strokeWidth="2.5" />
       </pattern>
     </defs>
   );

@@ -3,7 +3,7 @@ import { sqrtLevel, teamWeekGrid } from '../../src/domain/calendar';
 import { buildRows, CSV_COLUMNS, escapeCsv, toCsv } from '../../src/domain/csv';
 import { adjustmentSummary, currentYearHeadline } from '../../src/domain/explain';
 import { DEFAULT_FILTERS, filtersFromSearch, filtersReducer, filtersToSearch } from '../../src/domain/filters';
-import { activityValues, classOf, quantileBreaks } from '../../src/domain/mapValues';
+import { activityValues, classOf, meanDensityValues, polygonAreaKm2, quantileBreaks, ratioClass, ringAreaKm2 } from '../../src/domain/mapValues';
 import { annualTotals, monthMatrix, monthRange, sensorValues, sum } from '../../src/domain/series';
 import { dataset, harmonization, MESES, monthly, teamCal } from './fixtures';
 
@@ -138,5 +138,47 @@ describe('valores do mapa', () => {
     expect(classOf(0, b)).toBe(0);
     expect(classOf(null, b)).toBe(0);
     expect(classOf(10, b)).toBe(b.length);
+  });
+});
+
+describe('redesign: estado de navegação na URL', () => {
+  it('serializa aba, comparação lado a lado e os novos modos de mapa', () => {
+    const f = { ...DEFAULT_FILTERS, tab: 'sens' as const, split: true, mapMode: 'razao' as const };
+    expect(filtersToSearch(f)).toBe('?mapa=razao&comparar=lado&aba=sens');
+    expect(filtersFromSearch(filtersToSearch(f))).toEqual(f);
+    expect(filtersFromSearch('?aba=xyz&mapa=calor&comparar=sim')).toEqual(DEFAULT_FILTERS);
+  });
+  it('escolher uma visão sai do lado a lado; restaurar mantém a aba aberta', () => {
+    const lado = filtersReducer(DEFAULT_FILTERS, { type: 'split', split: true });
+    expect(filtersReducer(lado, { type: 'view', view: 'harmonizado' })).toMatchObject({ view: 'harmonizado', split: false });
+    const mexido = { ...DEFAULT_FILTERS, region: '2902708', yearFrom: 2020, split: true, tab: 'cal' as const };
+    expect(filtersReducer(mexido, { type: 'reset' })).toEqual({ ...DEFAULT_FILTERS, tab: 'cal' });
+  });
+});
+
+describe('redesign: modos de mapa da série da equipe', () => {
+  it('calcula área esférica plausível (quadrado de 1° no equador ≈ 12.364 km²) e desconta buracos', () => {
+    const sq = [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]];
+    expect(ringAreaKm2(sq)).toBeGreaterThan(12_300);
+    expect(ringAreaKm2(sq)).toBeLessThan(12_400);
+    const hole = [[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75], [0.25, 0.25]];
+    const withHole = polygonAreaKm2({ type: 'Polygon', coordinates: [sq, hole] });
+    expect(withHole).toBeCloseTo(ringAreaKm2(sq) - ringAreaKm2(hole), 6);
+  });
+  it('média anual por 1.000 km²: área ausente vira "sem dado", zero fica na classe zero', () => {
+    const idx = [
+      { cod_mun: 'a', nome: 'A', media_anual: 10, semana_pico: '', razao_ano_atual_vs_mediana: 1, alerta_ultimas_4_semanas: 'normal' as const },
+      { cod_mun: 'b', nome: 'B', media_anual: 0, semana_pico: '', razao_ano_atual_vs_mediana: null, alerta_ultimas_4_semanas: 'normal' as const },
+      { cod_mun: 'c', nome: 'C', media_anual: 5, semana_pico: '', razao_ano_atual_vs_mediana: 3, alerta_ultimas_4_semanas: 'acima' as const },
+    ];
+    const v = meanDensityValues(idx, new Map([['a', 500], ['b', 100]]));
+    expect(v.values.get('a')).toBe(20);
+    expect(v.values.get('b')).toBe(0);
+    expect(v.values.get('c')).toBeNull();
+    expect(classOf(v.values.get('b') ?? null, v.breaks)).toBe(0);
+  });
+  it('classes de ano ÷ normal são simétricas em torno de 1 e "sem base" não vira zero', () => {
+    expect([0.4, 0.8, 1, 1.05, 1.5, 2, null].map(ratioClass))
+      .toEqual(['muito_abaixo', 'abaixo', 'normal', 'normal', 'acima', 'muito_acima', 'sem_base']);
   });
 });

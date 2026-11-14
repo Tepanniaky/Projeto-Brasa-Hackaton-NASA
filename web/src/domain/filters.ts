@@ -6,7 +6,11 @@ import type { GridId, MetricId, SensorId } from '../data/types';
 
 export type ViewMode = 'original' | 'harmonizado';
 export type SensorChoice = 'ambos' | SensorId;
-export type MapMode = 'alerta' | 'atividade';
+/** alerta = últimas 4 semanas; media = média anual por 1.000 km²; razao = ano corrente ÷ normal; atividade = por sensor. */
+export type MapMode = 'alerta' | 'media' | 'razao' | 'atividade';
+export type Tab = 'resumo' | 'cal' | 'sens' | 'met';
+export const MAP_MODES: MapMode[] = ['alerta', 'media', 'razao', 'atividade'];
+export const TABS: Tab[] = ['resumo', 'cal', 'sens', 'met'];
 
 export interface Filters {
   region: string;     // '29' = Bahia inteira; senão código IBGE do município
@@ -17,6 +21,9 @@ export interface Filters {
   metric: MetricId;
   grid: GridId;
   mapMode: MapMode;
+  /** comparador da seção de sensores: alterna entre visões (false) ou mostra lado a lado (true) */
+  split: boolean;
+  tab: Tab;
 }
 
 export const STATE = '29';
@@ -32,6 +39,8 @@ export const DEFAULT_FILTERS: Filters = {
   metric: 'dias_celula_g10',
   grid: 'g10',
   mapMode: 'alerta',
+  split: false,
+  tab: 'resumo',
 };
 
 export type FilterAction =
@@ -42,6 +51,8 @@ export type FilterAction =
   | { type: 'metric'; metric: MetricId }
   | { type: 'grid'; grid: GridId }
   | { type: 'mapMode'; mapMode: MapMode }
+  | { type: 'split'; split: boolean }
+  | { type: 'tab'; tab: Tab }
   | { type: 'reset' };
 
 const clampYear = (y: number) => Math.min(YEAR_MAX, Math.max(YEAR_MIN, Math.round(y)));
@@ -56,7 +67,7 @@ export function filtersReducer(state: Filters, action: FilterAction): Filters {
       return { ...state, yearFrom: Math.min(a, b), yearTo: Math.max(a, b) };
     }
     case 'view':
-      return { ...state, view: action.view };
+      return { ...state, view: action.view, split: false };
     case 'sensor':
       return { ...state, sensor: action.sensor };
     case 'metric': {
@@ -71,8 +82,13 @@ export function filtersReducer(state: Filters, action: FilterAction): Filters {
       };
     case 'mapMode':
       return { ...state, mapMode: action.mapMode };
+    case 'split':
+      return { ...state, split: action.split };
+    case 'tab':
+      return { ...state, tab: action.tab };
     case 'reset':
-      return DEFAULT_FILTERS;
+      // restaura os filtros; a aba aberta é navegação, não filtro
+      return { ...DEFAULT_FILTERS, tab: state.tab };
   }
 }
 
@@ -89,6 +105,8 @@ export function filtersToSearch(f: Filters): string {
   if (f.sensor !== d.sensor) p.set('sensor', f.sensor);
   if (f.metric !== d.metric) p.set('metrica', f.metric);
   if (f.mapMode !== d.mapMode) p.set('mapa', f.mapMode);
+  if (f.split) p.set('comparar', 'lado');
+  if (f.tab !== d.tab) p.set('aba', f.tab);
   const s = p.toString();
   return s ? `?${s}` : '';
 }
@@ -112,7 +130,10 @@ export function filtersFromSearch(search: string, validRegions?: Set<string>): F
   const metrica = p.get('metrica') as MetricId | null;
   if (metrica && METRICS.includes(metrica)) f = filtersReducer(f, { type: 'metric', metric: metrica });
   const mapa = p.get('mapa');
-  if (mapa === 'alerta' || mapa === 'atividade') f.mapMode = mapa;
+  if (mapa && MAP_MODES.includes(mapa as MapMode)) f.mapMode = mapa as MapMode;
+  if (p.get('comparar') === 'lado') f.split = true;
+  const aba = p.get('aba');
+  if (aba && TABS.includes(aba as Tab)) f.tab = aba as Tab;
   return f;
 }
 

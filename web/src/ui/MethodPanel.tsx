@@ -16,7 +16,8 @@ export function MethodPanel({ ds }: { ds: Dataset }) {
   const harm = s?.harmonization;
   return (
     <section className="secao" aria-labelledby="sec-metodo" id="metodologia" data-testid="metodologia">
-      <h2 id="sec-metodo">Metodologia, fontes, qualidade e limitações</h2>
+      <span className="rotulo-secao">4 · Método e limites</span>
+      <h2 id="sec-metodo">Como ler estes dados</h2>
       <p className="secao-sub">Tudo abaixo é lido dos manifestos gerados pelo pipeline. O documento completo está em <code>docs/METHODOLOGY.md</code>.</p>
 
       <details className="metodo" open>

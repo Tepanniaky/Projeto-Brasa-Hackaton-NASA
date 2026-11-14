@@ -28,12 +28,15 @@ interface Props {
   tickFor: (label: string, i: number) => string | null;
   height?: number;
   ariaLabel: string;
+  /** máximo do eixo y imposto de fora: "lado a lado" usa a mesma escala nos dois painéis */
+  yMax?: number;
+  /** versão estreita para dois gráficos lado a lado */
+  compact?: boolean;
 }
 
-const W = 720;
-const PAD = { l: 52, r: 128, t: 22, b: 30 };
-
-export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel, formatX, tickFor, height = 250, ariaLabel }: Props) {
+export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel, formatX, tickFor, height = 250, ariaLabel, yMax, compact }: Props) {
+  const W = compact ? 360 : 600;
+  const PAD = compact ? { l: 44, r: 84, t: 22, b: 30 } : { l: 52, r: 118, t: 22, b: 30 };
   const { tip, show, hide } = useTip();
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -42,7 +45,7 @@ export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel,
   const ih = height - PAD.t - PAD.b;
   const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
   if (band) all.push(...band.hi);
-  const ymax = niceMax(Math.max(1, ...all) * 1.05);
+  const ymax = yMax ?? niceMax(Math.max(1, ...all) * 1.05);
   const x = (i: number) => PAD.l + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw);
   const y = (v: number) => PAD.t + ih - (v / ymax) * ih;
   const step = n > 1 ? iw / (n - 1) : iw;
@@ -104,7 +107,7 @@ export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel,
         <HatchDefs />
         {shade.map((s) => (
           <g key={s.label}>
-            <rect x={x(s.from) - step / 2} y={PAD.t} width={x(s.to) - x(s.from) + step} height={ih} fill="#efe9df" opacity={0.7} />
+            <rect x={x(s.from) - step / 2} y={PAD.t} width={x(s.to) - x(s.from) + step} height={ih} fill="var(--superficie-2)" opacity={0.9} />
             <text x={x(s.to) + step / 2 - 4} y={PAD.t - 6} textAnchor="end" style={{ fontSize: 11, fill: 'var(--tinta-2)' }}>{s.label}</text>
           </g>
         ))}

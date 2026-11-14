@@ -8,18 +8,18 @@ import { ANOMALY_GLYPH, ANOMALY_LABEL } from '../../domain/calendar';
 import { fmt1 } from '../../domain/format';
 import { niceMax, TableToggle, ticks, Tip, useTip } from './common';
 
-const W = 720;
-const H = 250;
-const PAD = { l: 52, r: 16, t: 14, b: 30 };
+const W = 560;
+const H = 230;
+const PAD = { l: 44, r: 12, t: 14, b: 30 };
 const COLOR: Record<AnomalyClass, string> = {
   muito_acima: 'var(--muito-acima)', acima: 'var(--acima)', normal: 'var(--normal)', abaixo: 'var(--abaixo)',
 };
 
 function Marker({ cls, x, y }: { cls: AnomalyClass; x: number; y: number }) {
   const c = COLOR[cls];
-  if (cls === 'muito_acima') return <path d={`M${x},${y - 6.5}L${x + 6},${y + 4.5}L${x - 6},${y + 4.5}Z`} fill={c} stroke="#fff" strokeWidth={1.2} />;
-  if (cls === 'acima') return <path d={`M${x},${y - 5}L${x + 4.5},${y + 3.5}L${x - 4.5},${y + 3.5}Z`} fill={c} stroke="#fff" strokeWidth={1.2} />;
-  if (cls === 'abaixo') return <path d={`M${x},${y + 5}L${x + 4.5},${y - 3.5}L${x - 4.5},${y - 3.5}Z`} fill={c} stroke="#fff" strokeWidth={1.2} />;
+  if (cls === 'muito_acima') return <path d={`M${x},${y - 6.5}L${x + 6},${y + 4.5}L${x - 6},${y + 4.5}Z`} fill={c} stroke="var(--superficie)" strokeWidth={1.2} />;
+  if (cls === 'acima') return <path d={`M${x},${y - 5}L${x + 4.5},${y + 3.5}L${x - 4.5},${y + 3.5}Z`} fill={c} stroke="var(--superficie)" strokeWidth={1.2} />;
+  if (cls === 'abaixo') return <path d={`M${x},${y + 5}L${x + 4.5},${y - 3.5}L${x - 4.5},${y - 3.5}Z`} fill={c} stroke="var(--superficie)" strokeWidth={1.2} />;
   return <circle cx={x} cy={y} r={2.6} fill={c} />;
 }
 
@@ -75,14 +75,14 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
         <line x1={x(cur.ultima_semana_completa) + 4} x2={x(cur.ultima_semana_completa) + 4} y1={PAD.t} y2={PAD.t + ih}
               stroke="var(--tinta-3)" strokeDasharray="2 3" />
         <text x={x(cur.ultima_semana_completa) + 8} y={PAD.t + 10}>sem dado depois daqui</text>
-        <path d={line} fill="none" stroke="var(--carvao)" strokeWidth={2} />
+        <path d={line} fill="none" stroke="var(--tinta)" strokeWidth={2} />
         {cur.semanas.map((s) => <Marker key={s.semana} cls={s.classe} x={x(s.semana)} y={y(s.valor)} />)}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + ih} stroke="var(--tinta-3)" />}
         <rect x={PAD.l} y={PAD.t} width={iw} height={ih} fill="transparent" onMouseMove={onMove}
               onMouseLeave={() => { setHover(null); hide(); }} />
       </svg>
       <ul className="legenda-linha">
-        <li><span className="chave-linha" style={{ color: 'var(--carvao)' }} /> {cur.ano}</li>
+        <li><span className="chave-linha" style={{ color: 'var(--tinta)' }} /> {cur.ano}</li>
         <li><span className="chave-linha" style={{ color: 'var(--tinta-3)' }} /> Mediana {cal.linha_de_base[0]}–{cal.linha_de_base[1]}</li>
         <li><span className="chave-faixa" style={{ background: 'var(--normal)', opacity: 0.5 }} /> Faixa mediana a percentil 90</li>
         {(['muito_acima', 'acima', 'abaixo'] as AnomalyClass[]).map((c) => (

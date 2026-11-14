@@ -9,7 +9,7 @@ import { adjustmentSummary, auditSentences, driftSentence, evaluationVerdict } f
 import { type FilterAction, type Filters, sensorsFor } from '../domain/filters';
 import { fmt1, fmtInt, fmtMonth, fmtSignedPct } from '../domain/format';
 import { harmonizedSlice, monthMatrix, monthRange, slice, sum } from '../domain/series';
-import { TableToggle } from './charts/common';
+import { niceMax, TableToggle } from './charts/common';
 import { MonthCalendar } from './charts/MonthCalendar';
 import { type LineSeries, TimeChart } from './charts/TimeChart';
 
@@ -17,6 +17,15 @@ const SENSOR_STYLE: Record<SensorId, { color: string; label: string; marker: 'ci
   MODIS_AQUA: { color: 'var(--modis)', label: 'MODIS/Aqua', marker: 'circle' },
   VIIRS_NOAA20: { color: 'var(--viirs)', label: 'VIIRS/NOAA-20', marker: 'square' },
 };
+
+function Title() {
+  return (
+    <>
+      <span className="rotulo-secao">3 · Comparação entre sensores</span>
+      <h2 id="sec-sensores">Mais fogo ou só enxergando melhor?</h2>
+    </>
+  );
+}
 
 export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters: Filters; dispatch: (a: FilterAction) => void }) {
   const s = ds.sensors;
@@ -36,11 +45,11 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
   if (!s) {
     return (
       <section className="secao" aria-labelledby="sec-sensores">
-        <h2 id="sec-sensores">Mais fogo ou só enxergando melhor?</h2>
+        <Title />
         <div className="estado estado-erro" role="alert">
           <h2>Dados por sensor indisponíveis</h2>
           <p>{ds.sensorsError ?? 'A camada de registros por sensor não foi publicada.'} O calendário da equipe continua disponível acima.</p>
-          <p>Para gerar esses dados, rode o pipeline: <code>python -m brasa.cli build --dataset real</code> (veja o README).</p>
+          <p className="nota">Para gerar esses dados, rode o pipeline: <code>python -m brasa.cli build --dataset real</code> (veja o README).</p>
         </div>
       </section>
     );
@@ -48,7 +57,7 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
   if (!range) {
     return (
       <section className="secao" aria-labelledby="sec-sensores">
-        <h2 id="sec-sensores">Mais fogo ou só enxergando melhor?</h2>
+        <Title />
         <div className="estado">
           <h2>O período escolhido não tem dados por sensor</h2>
           <p>Os registros originais MODIS e VIIRS processados pelo BRASA cobrem {s.manifest.periodo.inicio.slice(0, 4)} a {s.manifest.periodo.fim.slice(0, 4)}.</p>
@@ -60,7 +69,7 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
   }
   if (!region || !content) {
     return (
-      <section className="secao"><div className="estado"><h2>Local sem dados por sensor</h2>
+      <section className="secao"><Title /><div className="estado"><h2>Local sem dados por sensor</h2>
         <p>Este código de município não aparece na série processada.</p></div></section>
     );
   }
@@ -96,6 +105,14 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
     ...(trainYears.length ? [{ from: yearIdx(trainYears[0]), to: lastIdx(trainYears[trainYears.length - 1]), label: 'anos de ajuste' }] : []),
   ];
   const isState = filters.region === '29';
+  const split = filters.split;
+  const cellUnit = grid === 'g10' ? 'dias-célula (10 km)' : 'dias-célula (5 km)';
+  const splitOriginal: LineSeries[] = [
+    harmSeries[0],
+    { id: 'viirs-orig', label: 'VIIRS bruto', color: 'var(--viirs)', marker: 'square', values: harmSeries[1].values },
+  ];
+  const splitAdjusted: LineSeries[] = [harmSeries[0], ...harmSeries.slice(2)];
+  const splitMax = niceMax(Math.max(1, ...harmSeries.flatMap((x) => x.values.filter((v): v is number => v !== null)), ...(h ? h.hi : [])) * 1.05);
   const verdict = evaluationVerdict(s.harmonization, grid, isState ? 'estado_mes' : 'municipio_ano');
   const audit = s.audit?.regioes[filters.region];
   const auditText = auditSentences(audit, region.nome);
@@ -104,15 +121,19 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
 
   return (
     <section className="secao" aria-labelledby="sec-sensores" data-testid="secao-sensores">
+      <Title />
+      <p className="secao-sub">
+        {harmonized || split
+          ? `VIIRS/NOAA-20 convertido para a escala do MODIS/Aqua, em ${cellUnit}, ${periodo}. Experimental.`
+          : `Registros originais FIRMS de cada sensor, ${periodo}, nunca somados. Métrica: ${unit}.`}
+      </p>
       <div className="secao-topo">
-        <div>
-          <h2 id="sec-sensores">Mais fogo ou só enxergando melhor?</h2>
-          <p className="secao-sub">
-            {harmonized
-              ? `O que muda após o ajuste: VIIRS/NOAA-20 convertido para a escala do MODIS/Aqua, em ${grid === 'g10' ? 'dias-célula de 10 km' : 'dias-célula de 5 km'}, ${periodo}. Experimental.`
-              : `Registros originais FIRMS de cada sensor, ${periodo}, lado a lado e nunca somados. Métrica: ${unit}.`}
-          </p>
+        <div className="segmentos na-superficie" role="group" aria-label="Comparar visões" data-testid="comparador">
+          <button type="button" aria-pressed={!harmonized && !split} onClick={() => dispatch({ type: 'view', view: 'original' })}>Originais</button>
+          <button type="button" aria-pressed={harmonized && !split} onClick={() => dispatch({ type: 'view', view: 'harmonizado' })}>Após o ajuste</button>
+          <button type="button" aria-pressed={split} onClick={() => dispatch({ type: 'split', split: true })}>Lado a lado</button>
         </div>
+        {s.manifest.dataset_kind !== 'real' && <span className="chip destaque-chip">Dados de demonstração — sintéticos</span>}
       </div>
       {range.clamped && (
         <p className="nota-alerta">Os dados por sensor cobrem só 2020–2025. Esta seção mostra {periodo}; o calendário da equipe acima continua no período completo escolhido.</p>
@@ -121,7 +142,7 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
         <p className="nota">Faixas hachuradas: o Aqua teve falha de telemetria de 16/08 a 02/09/2020 e a cobertura MODIS foi parcial nesses meses.</p>
       )}
 
-      {!harmonized && (
+      {!harmonized && !split && (
         <>
           {!anyData ? (
             <div className="estado" data-testid="sem-registros">
@@ -168,10 +189,14 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
         </>
       )}
 
-      {harmonized && (
+      {(harmonized || split) && (
         <>
           {s.harmonization.status !== 'ok' || !h ? (
-            <div className="estado"><h2>Ajuste indisponível</h2><p>O pipeline não encontrou dados suficientes para ajustar o modelo. Nada é extrapolado.</p></div>
+            <div className="estado estado-aviso" data-testid="sem-harmonizacao">
+              <h2>◌ Harmonização ainda não calculada</h2>
+              <p>O pipeline não encontrou dados suficientes para ajustar o modelo (status: {s.harmonization.status}). Nada é extrapolado; os registros originais continuam disponíveis.</p>
+              <button type="button" className="botao-sec" onClick={() => dispatch({ type: 'view', view: 'original' })}>Ver registros originais</button>
+            </div>
           ) : (
             <>
               <div className="numeros-ajuste" data-testid="numeros-ajuste">
@@ -179,14 +204,29 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
                 <div style={{ borderTopColor: 'var(--viirs)' }}><div className="valor">{fmtInt(adj.viirs)}</div><div className="rotulo">VIIRS/NOAA-20 bruto</div></div>
                 <div style={{ borderTopColor: 'var(--viirs)' }}><div className="valor">{adj.adjusted === null ? '—' : fmtInt(adj.adjusted)}</div>
                   <div className="rotulo">VIIRS ajustado{adj.adjustedLo !== null && adj.adjustedHi !== null ? ` (${fmtInt(adj.adjustedLo)}–${fmtInt(adj.adjustedHi)})` : ''}</div></div>
-                <div style={{ borderTopColor: 'var(--carvao)' }}><div className="valor">{adj.adjustedDiff === null ? '—' : fmtSignedPct(adj.adjustedDiff)}</div>
+                <div style={{ borderTopColor: 'var(--tinta)' }}><div className="valor">{adj.adjustedDiff === null ? '—' : fmtSignedPct(adj.adjustedDiff)}</div>
                   <div className="rotulo">Ajustado em relação ao MODIS</div></div>
               </div>
-              <TimeChart labels={meses} series={harmSeries} band={{ lo: h.lo, hi: h.hi, color: 'var(--viirs)', label: 'Intervalo aprox. 90 %' }}
-                         shade={shade} gaps={gapIdx} yLabel={grid === 'g10' ? 'dias-célula (10 km)' : 'dias-célula (5 km)'}
-                         formatX={fmtMonth} tickFor={tickFor} ariaLabel={`MODIS observado e VIIRS ajustado em ${region.nome}`} />
+              {split ? (
+                <>
+                  <div className="duas-colunas fixas" data-testid="lado-a-lado">
+                    <div><h4>Registros originais</h4>
+                      <TimeChart compact labels={meses} series={splitOriginal} gaps={gapIdx} yMax={splitMax} yLabel={cellUnit}
+                                 formatX={fmtMonth} tickFor={tickFor} height={230} ariaLabel={`Registros originais em ${region.nome}`} /></div>
+                    <div><h4>Após o ajuste (estimativa)</h4>
+                      <TimeChart compact labels={meses} series={splitAdjusted} band={{ lo: h.lo, hi: h.hi, color: 'var(--viirs)', label: 'Intervalo aprox. 90 %' }}
+                                 shade={shade} gaps={gapIdx} yMax={splitMax} yLabel={cellUnit}
+                                 formatX={fmtMonth} tickFor={tickFor} height={230} ariaLabel={`MODIS observado e VIIRS ajustado em ${region.nome}`} /></div>
+                  </div>
+                  <p className="nota">Mesma unidade e mesma escala vertical nos dois painéis, para não exagerar o efeito do ajuste.</p>
+                </>
+              ) : (
+                <TimeChart labels={meses} series={harmSeries} band={{ lo: h.lo, hi: h.hi, color: 'var(--viirs)', label: 'Intervalo aprox. 90 %' }}
+                           shade={shade} gaps={gapIdx} yLabel={cellUnit}
+                           formatX={fmtMonth} tickFor={tickFor} ariaLabel={`MODIS observado e VIIRS ajustado em ${region.nome}`} />
+              )}
               <ul className="legenda-linha">
-                <li><span className="chave-faixa" style={{ background: '#efe9df' }} /> Anos de ajuste ({s.harmonization.anos_ajuste.join(', ')}); os demais são de avaliação ({evalYears.join(', ') || 'fora do período'})</li>
+                <li><span className="chave-faixa" style={{ background: 'var(--superficie-2)', border: '1px solid var(--linha)' }} /> Anos de ajuste ({s.harmonization.anos_ajuste.join(', ')}); os demais são de avaliação ({evalYears.join(', ') || 'fora do período'})</li>
                 <li><span className="chave-faixa" style={{ background: 'var(--viirs)', opacity: 0.25 }} /> Intervalo aproximado de 90 %, que subestima a incerteza (ver metodologia)</li>
               </ul>
               <div className="explicacao" data-testid="o-que-muda">

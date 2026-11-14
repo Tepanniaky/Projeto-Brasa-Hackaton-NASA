@@ -50,6 +50,7 @@ export function SearchBox({ items, value, onPick }: { items: TeamIndexItem[]; va
 
 const years = Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) => YEAR_MIN + i);
 
+/** Gaveta no celular: as opções de métrica só afetam a seção de sensores e o modo "Por sensor" do mapa. */
 const METRIC_OPTIONS: { id: MetricId; label: string }[] = [
   { id: 'dias_celula_g10', label: 'Dias-célula (10 km)' },
   { id: 'dias_celula_g5', label: 'Dias-célula (5 km)' },
@@ -57,17 +58,18 @@ const METRIC_OPTIONS: { id: MetricId; label: string }[] = [
   { id: 'dias_com_deteccao', label: 'Dias com detecção' },
 ];
 
-export function FilterBar({ filters, dispatch, items, onExport, exportDisabled, hasSensors }: {
-  filters: Filters; dispatch: (a: FilterAction) => void; items: TeamIndexItem[];
+export function FilterBar({ id, filters, dispatch, items, onExport, exportDisabled, hasSensors, onReset, open, onClose }: {
+  id: string; filters: Filters; dispatch: (a: FilterAction) => void; items: TeamIndexItem[];
   onExport: () => void; exportDisabled: boolean; hasSensors: boolean;
+  onReset: () => void; open: boolean; onClose: () => void;
 }) {
   return (
-    <form className="filtros" aria-label="Filtros compartilhados por mapa, calendários, gráficos e exportação"
-          onSubmit={(e) => e.preventDefault()}>
-      <SearchBox items={items} value={filters.region} onPick={(cod) => dispatch({ type: 'region', region: cod })} />
+    <form id={id} className={`filtros${open ? ' aberta' : ''}`} aria-label="Filtros compartilhados por mapa, calendários, gráficos e exportação"
+          onSubmit={(e) => e.preventDefault()} onKeyDown={(e) => { if (e.key === 'Escape' && open) onClose(); }}>
+      <SearchBox items={items} value={filters.region} onPick={(cod) => { dispatch({ type: 'region', region: cod }); onClose(); }} />
       <fieldset className="campo">
         <legend>Período</legend>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div className="linha-campos">
           <select aria-label="Ano inicial" value={filters.yearFrom} data-testid="ano-inicial"
                   onChange={(e) => dispatch({ type: 'period', yearFrom: Number(e.target.value), yearTo: filters.yearTo })}>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
@@ -82,9 +84,9 @@ export function FilterBar({ filters, dispatch, items, onExport, exportDisabled, 
       <fieldset className="campo">
         <legend>Visão</legend>
         <div className="segmentos" role="group" aria-label="Visão">
-          <button type="button" aria-pressed={filters.view === 'original'} onClick={() => dispatch({ type: 'view', view: 'original' })}>
-            Observações originais</button>
-          <button type="button" aria-pressed={filters.view === 'harmonizado'} disabled={!hasSensors}
+          <button type="button" aria-pressed={filters.view === 'original' && !filters.split} onClick={() => dispatch({ type: 'view', view: 'original' })}>
+            Originais</button>
+          <button type="button" aria-pressed={filters.view === 'harmonizado' && !filters.split} disabled={!hasSensors}
                   onClick={() => dispatch({ type: 'view', view: 'harmonizado' })}>Harmonizado</button>
         </div>
       </fieldset>
@@ -104,9 +106,13 @@ export function FilterBar({ filters, dispatch, items, onExport, exportDisabled, 
           {METRIC_OPTIONS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
         </select>
       </label>
-      <button type="button" className="botao-acao" onClick={onExport} disabled={exportDisabled} data-testid="exportar-csv">
-        Exportar CSV
-      </button>
+      <div className="acoes-filtros">
+        <button type="button" className="botao-fantasma" onClick={onReset} data-testid="restaurar-filtros">Restaurar filtros</button>
+        <button type="button" className="botao-acao" onClick={onExport} disabled={exportDisabled} data-testid="exportar-csv">
+          Exportar CSV
+        </button>
+        <button type="button" className="botao-fantasma fechar-gaveta" onClick={onClose}>Ver resultados</button>
+      </div>
     </form>
   );
 }

@@ -20,7 +20,7 @@ function fill(c: CellState) {
   return RAMP[c.level];
 }
 
-export function WeekCalendar({ cal, yearFrom, yearTo }: { cal: TeamCalendar; yearFrom: number; yearTo: number }) {
+export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalendar; yearFrom: number; yearTo: number; onYear?: (y: number) => void }) {
   const grid = useMemo(() => teamWeekGrid(cal, yearFrom, yearTo), [cal, yearFrom, yearTo]);
   const { tip, show, hide } = useTip();
   const [focus, setFocus] = useState<[number, number] | null>(null);
@@ -73,7 +73,10 @@ export function WeekCalendar({ cal, yearFrom, yearTo }: { cal: TeamCalendar; yea
           ) : null)}
           {grid.years.map((y, r) => (
             <g key={y}>
-              <text x={LEFT - 6} y={TOP + r * (CH + GAP) + CH - 3} textAnchor="end"
+              <text x={LEFT - 6} y={TOP + r * (CH + GAP) + CH - 3} textAnchor="end" data-testid={`ano-${y}`}
+                    className={onYear ? 'ano-clicavel' : undefined} onClick={onYear ? () => onYear(y) : undefined}
+                    onMouseMove={onYear ? (e) => show(e, <div>{yearFrom === y && yearTo === y ? 'Clique para voltar ao período completo' : `Clique para ver só ${y}`}</div>) : undefined}
+                    onMouseLeave={onYear ? hide : undefined}
                     style={{ fontWeight: y === cal.ano_atual.ano ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{y}</text>
               {grid.cells[r].map((c, w) => (
                 <rect key={w} className="cal-celula" data-rw={`${r}-${w}`} data-estado={c.kind}
@@ -88,7 +91,7 @@ export function WeekCalendar({ cal, yearFrom, yearTo }: { cal: TeamCalendar; yea
             <g aria-hidden="true">
               <rect x={LEFT + pc.semana_inicio * (CW + GAP) - 2} y={TOP - 20}
                     width={(pc.semana_fim - pc.semana_inicio + 1) * (CW + GAP) + 2.5}
-                    height={grid.years.length * (CH + GAP) + 21} fill="none" stroke="var(--carvao)" strokeWidth={2} rx={3} />
+                    height={grid.years.length * (CH + GAP) + 21} fill="none" stroke="var(--tinta)" strokeWidth={2} rx={3} />
               <text x={LEFT + pc.semana_inicio * (CW + GAP)} y={TOP - 26} style={{ fontWeight: 600, fill: 'var(--tinta)' }}>
                 Período crítico {pc.inicio}–{pc.fim}
               </text>
@@ -102,7 +105,7 @@ export function WeekCalendar({ cal, yearFrom, yearTo }: { cal: TeamCalendar; yea
           <li key={i}><span className="amostra" style={{ background: RAMP[i + 1] }} /> até {fmtInt(Math.max(1, b))}</li>
         ))}
         <li><span className="amostra hachura" /> Sem dado (semana não publicada)</li>
-        <li><span className="amostra" style={{ background: 'transparent', border: '2px solid var(--carvao)' }} /> Período crítico</li>
+        <li><span className="amostra" style={{ background: 'transparent', border: '2px solid var(--tinta)' }} /> Período crítico</li>
       </ul>
       <p className="nota">Escala de raiz quadrada: poucas semanas concentram quase todo o fogo, e a raiz deixa visíveis os meses fracos. Unidade: detecções harmonizadas (equivalente MODIS) por semana.</p>
       <TableToggle label="valores semanais">

@@ -1,70 +1,83 @@
-/** Série anual da camada A: barras finas com faixa min–max (incerteza da conversão) a partir de 2022. */
+/**
+ * Série anual da camada A sob o mapa, usada também como seletor de período: arrastar sobre as barras
+ * escolhe de/até (os selects da barra de filtros continuam como alternativa por teclado).
+ * A partir de 2022 o traço laranja é a faixa 5–95 % da conversão VIIRS → MODIS informada pela equipe.
+ */
+import { useRef, useState } from 'react';
 import type { TeamCalendar } from '../../data/types';
-import { fmt1, fmtInt } from '../../domain/format';
-import { HATCH_ID, HatchDefs, niceMax, TableToggle, ticks, Tip, useTip } from './common';
+import { fmt1 } from '../../domain/format';
+import { TableToggle, Tip, useTip } from './common';
 
-const W = 720;
-const H = 240;
-const PAD = { l: 56, r: 12, t: 14, b: 30 };
-
-export function AnnualChart({ cal, yearFrom, yearTo }: { cal: TeamCalendar; yearFrom: number; yearTo: number }) {
+export function AnnualChart({ cal, yearFrom, yearTo, onRange }: {
+  cal: TeamCalendar; yearFrom: number; yearTo: number; onRange: (from: number, to: number) => void;
+}) {
   const { tip, show, hide } = useTip();
-  const rows = cal.anual.filter((a) => a.ano >= yearFrom && a.ano <= yearTo);
-  if (!rows.length) return <p className="estado">Nenhum ano no período selecionado.</p>;
-  const ymax = niceMax(Math.max(1, ...rows.map((r) => r.max)) * 1.05);
-  const iw = W - PAD.l - PAD.r;
-  const ih = H - PAD.t - PAD.b;
-  const slot = iw / rows.length;
-  const bw = Math.max(4, Math.min(22, slot * 0.55));
-  const x = (i: number) => PAD.l + slot * (i + 0.5);
-  const y = (v: number) => PAD.t + ih - (v / ymax) * ih;
-  const firstConv = rows.findIndex((r) => r.ano >= 2022);
+  const [drag, setDrag] = useState<{ start: number; end: number } | null>(null);
+  const barsRef = useRef<HTMLDivElement>(null);
+  const rows = cal.anual;
+  const max = Math.max(1, ...rows.map((r) => r.max));
+  const lo = drag ? Math.min(drag.start, drag.end) : yearFrom;
+  const hi = drag ? Math.max(drag.start, drag.end) : yearTo;
+
+  const yearAt = (clientX: number, clientY: number): number | null => {
+    const b = document.elementFromPoint(clientX, clientY)?.closest?.('[data-ano]') as HTMLElement | null;
+    if (b && barsRef.current?.contains(b)) return Number(b.dataset.ano);
+    // fora das barras (arraste além da borda): usa a posição horizontal
+    const r = barsRef.current?.getBoundingClientRect();
+    if (!r) return null;
+    const i = Math.max(0, Math.min(rows.length - 1, Math.floor(((clientX - r.left) / r.width) * rows.length)));
+    return rows[i]?.ano ?? null;
+  };
+
+  const tipFor = (r: TeamCalendar['anual'][number]) => (
+    <div><strong>{r.ano}{r.parcial ? ' · parcial' : ''}</strong><div>{fmt1(r.valor)} detecções harmonizadas</div>
+      {r.max > r.min ? <div>Faixa da conversão (5–95 %): {fmt1(r.min)} a {fmt1(r.max)}</div> : <div>MODIS observado</div>}</div>
+  );
+
   return (
-    <>
-      <svg className="grafico" viewBox={`0 0 ${W} ${H}`} role="img" data-testid="grafico-anual"
-           aria-label={`Total anual de detecções harmonizadas de ${cal.nome}`}>
-        <HatchDefs />
-        {ticks(ymax).map((t) => (
-          <g key={t}>
-            <line className="grade" x1={PAD.l} x2={PAD.l + iw} y1={y(t)} y2={y(t)} />
-            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end">{fmtInt(t)}</text>
-          </g>
-        ))}
-        {firstConv > 0 && (
-          <g>
-            <line x1={x(firstConv) - slot / 2} x2={x(firstConv) - slot / 2} y1={PAD.t} y2={PAD.t + ih} stroke="var(--tinta-3)" strokeDasharray="3 3" />
-            <text x={x(firstConv) - slot / 2 - 6} y={PAD.t + 10} textAnchor="end">MODIS observado</text>
-            <text x={x(firstConv) - slot / 2 + 6} y={PAD.t + 10}>VIIRS convertido</text>
-          </g>
-        )}
-        <line className="eixo" x1={PAD.l} x2={PAD.l + iw} y1={PAD.t + ih} y2={PAD.t + ih} />
-        {rows.map((r, i) => (
-          <g key={r.ano} onMouseMove={(e) => show(e, (
-            <div><strong>{r.ano}{r.parcial ? ' (parcial)' : ''}</strong><div>{fmt1(r.valor)} detecções harmonizadas</div>
-              {r.max > r.min && <div>Faixa da conversão: {fmt1(r.min)} a {fmt1(r.max)}</div>}
-              <div>{r.ano <= 2021 ? 'MODIS observado' : 'VIIRS convertido pela equipe'}</div></div>
-          ))} onMouseLeave={hide}>
-            <rect x={x(i) - slot / 2} y={PAD.t} width={slot} height={ih} fill="transparent" />
-            <rect x={x(i) - bw / 2} y={y(r.valor)} width={bw} height={Math.max(0, y(0) - y(r.valor))} rx={3}
-                  fill={r.parcial ? `url(#${HATCH_ID})` : r.ano >= 2022 ? 'var(--r3)' : 'var(--r2)'}
-                  stroke={r.parcial ? 'var(--r3)' : 'none'} strokeWidth={1.5} />
-            {r.max > r.min && (
-              <g stroke="var(--carvao)" strokeWidth={1.5}>
-                <line x1={x(i)} x2={x(i)} y1={y(r.max)} y2={y(r.min)} />
-                <line x1={x(i) - 4} x2={x(i) + 4} y1={y(r.max)} y2={y(r.max)} />
-                <line x1={x(i) - 4} x2={x(i) + 4} y1={y(r.min)} y2={y(r.min)} />
-              </g>
-            )}
-            {(rows.length <= 12 || i % 3 === 0 || i === rows.length - 1) &&
-              <text x={x(i)} y={H - 10} textAnchor="middle">{r.ano}</text>}
-          </g>
-        ))}
-      </svg>
+    <div className="escova">
+      <div className="escova-topo">
+        <span><b>Total por ano</b> · {cal.nome} · detecções harmonizadas (equiv. MODIS)</span>
+        <span><b>{lo === hi ? lo : `${lo}–${hi}`}</b> · arraste para escolher o período</span>
+      </div>
+      <div ref={barsRef} className="barras" data-testid="grafico-anual" role="img"
+           aria-label={`Total anual de ${cal.nome}; arraste para escolher o período ou use os seletores de ano nos filtros`}
+           onPointerDown={(e) => {
+             const y = yearAt(e.clientX, e.clientY);
+             if (y === null) return;
+             e.currentTarget.setPointerCapture(e.pointerId);
+             hide();
+             setDrag({ start: y, end: y });
+           }}
+           onPointerMove={(e) => {
+             if (!drag) return;
+             const y = yearAt(e.clientX, e.clientY);
+             if (y !== null && y !== drag.end) setDrag({ ...drag, end: y });
+           }}
+           onPointerUp={() => {
+             if (!drag) return;
+             onRange(Math.min(drag.start, drag.end), Math.max(drag.start, drag.end));
+             setDrag(null);
+           }}
+           onPointerCancel={() => setDrag(null)}>
+        {rows.map((r) => {
+          const inside = r.ano >= lo && r.ano <= hi;
+          return (
+            <div key={r.ano} data-ano={r.ano} className={`barra${inside ? ' dentro' : ''}${r.parcial ? ' parcial' : ''}`}
+                 onMouseMove={(e) => !drag && show(e, tipFor(r))} onMouseLeave={hide}>
+              <span>
+                <i style={{ height: `${(r.valor / max) * 100}%` }} />
+                {r.max > r.min && <u style={{ bottom: `${(r.min / max) * 100}%`, height: `${Math.max(2, ((r.max - r.min) / max) * 100)}%` }} />}
+              </span>
+              <em>{String(r.ano).slice(2)}</em>
+            </div>
+          );
+        })}
+      </div>
       <ul className="legenda-linha">
-        <li><span className="chave-faixa" style={{ background: 'var(--r2)' }} /> MODIS observado (até 2021)</li>
-        <li><span className="chave-faixa" style={{ background: 'var(--r3)' }} /> VIIRS convertido (desde 2022)</li>
-        <li><span className="chave-linha" style={{ color: 'var(--carvao)', borderTopWidth: 0, borderLeft: '2px solid', height: 12, width: 2 }} /> Faixa 5–95 % da conversão</li>
-        <li><span className="amostra hachura" /> Ano parcial</li>
+        <li><span className="chave-faixa" style={{ background: 'var(--tinta)' }} /> até 2021: MODIS observado</li>
+        <li><span className="chave-faixa" style={{ width: 3, background: 'var(--brasa)' }} /> desde 2022: VIIRS convertido, faixa 5–95 %</li>
+        <li><span className="amostra hachura" style={{ height: 10 }} /> ano parcial</li>
       </ul>
       <TableToggle label="totais anuais">
         <table className="dados">
@@ -76,6 +89,6 @@ export function AnnualChart({ cal, yearFrom, yearTo }: { cal: TeamCalendar; year
         </table>
       </TableToggle>
       <Tip tip={tip} />
-    </>
+    </div>
   );
 }
