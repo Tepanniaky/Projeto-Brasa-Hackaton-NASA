@@ -1,0 +1,89 @@
+# Publica o site do BRASA no GitHub Pages a cada push no main (ou manualmente, em Actions → Run workflow).
+#
+# 1. testa e gera o build de web/ (testes unitários, build e E2E nos dados reais);
+# 2. só publica se o GitHub Pages do repositório estiver ativado com a fonte "GitHub Actions"
+#    (Settings → Pages → Build and deployment → Source: GitHub Actions). Enquanto não estiver,
+#    o workflow testa e gera o build, mas pula a publicação sem falhar.
+#
+# Endereço: https://<usuário>.github.io/<repositório>/  (o build usa caminhos relativos, base './').
+name: Publicar site (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# uma publicação por vez; não cancela uma que já esteja em andamento
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Testar e gerar o build
+    runs-on: ubuntu-latest
+    outputs:
+      pages: ${{ steps.pages.outputs.ativo }}
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependências (versões fixadas)
+        run: npm ci
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Build de produção
+        run: npm run build
+
+      - name: Testes E2E (Playwright, dados reais)
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+
+      - name: GitHub Pages está ativado com a fonte GitHub Actions?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tipo=$(gh api "repos/${{ github.repository }}/pages" --jq .build_type 2>/dev/null || true)
+          if [ "$tipo" = "workflow" ]; then
+            echo "ativo=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ativo=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages não está ativado com a fonte GitHub Actions; build testado, publicação pulada."
+          fi
+
+      - name: Enviar o build para o Pages
+        if: steps.pages.outputs.ativo == 'true'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: web/dist
+
+  deploy:
+    name: Publicar
+    needs: build
+    if: needs.build.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -105,6 +105,20 @@ npm run build && npm run preview   # http://localhost:4173
 Os dados já processados estão versionados em `web/public/`, então a interface
 roda sem o pipeline.
 
+## Publicar o site (GitHub Pages)
+
+O workflow `.github/workflows/deploy.yml` roda a cada push no `main` (ou
+manualmente, em **Actions → Publicar site → Run workflow**). Ele roda os testes
+unitários, faz o build e os testes E2E e publica `web/dist` no GitHub Pages.
+
+- Endereço: https://tepanniaky.github.io/Projeto-Brasa-Hackaton-NASA/
+  (em inglês: acrescente `?lang=en`).
+- Só publica se o Pages estiver ativado em **Settings → Pages → Build and
+  deployment → Source: GitHub Actions**. Sem isso, o workflow testa e gera o
+  build, mas pula a publicação sem falhar.
+- Se algum teste falhar, nada é publicado e o site no ar continua na versão
+  anterior.
+
 ## Reprocessar os dados (pipeline Python)
 
 ```bash
