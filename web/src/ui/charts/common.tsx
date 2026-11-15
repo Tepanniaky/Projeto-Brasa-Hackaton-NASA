@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 
 export function niceMax(v: number): number {
   if (v <= 0) return 1;
@@ -11,6 +11,27 @@ export function niceMax(v: number): number {
 export function ticks(max: number, n = 4): number[] {
   const step = max / n;
   return Array.from({ length: n + 1 }, (_, i) => i * step);
+}
+
+/**
+ * Largura do viewBox = largura real do contêiner (limitada entre `min` e `ideal`).
+ * Com viewBox fixo, o SVG inteiro encolhe no celular e o texto de 11 px vira ~6 px;
+ * assim o texto fica perto do tamanho real e o desenho se adapta à largura.
+ */
+export function useChartWidth(ideal: number, min = 300) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [width, setWidth] = useState(ideal);
+  useLayoutEffect(() => {
+    const parent = ref.current?.parentElement;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry.contentRect.width);
+      if (w > 0) setWidth(Math.max(min, Math.min(ideal, w)));
+    });
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [ideal, min]);
+  return [ref, width] as const;
 }
 
 export interface TipState { x: number; y: number; content: ReactNode }

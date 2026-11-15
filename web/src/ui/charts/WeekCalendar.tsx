@@ -4,7 +4,7 @@
  */
 import { type KeyboardEvent, useMemo, useState } from 'react';
 import type { TeamCalendar } from '../../data/types';
-import { type CellState, sqrtBreaks, teamWeekGrid } from '../../domain/calendar';
+import { type CellState, criticalSegments, inCriticalPeriod, sqrtBreaks, teamWeekGrid } from '../../domain/calendar';
 import { fmt1, fmtInt, MONTHS_SHORT } from '../../domain/format';
 import { HATCH_ID, HatchDefs, RAMP, TableToggle, Tip, useTip } from './common';
 
@@ -27,6 +27,9 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
   const width = LEFT + 52 * (CW + GAP) + 4;
   const height = TOP + grid.years.length * (CH + GAP) + 6;
   const pc = cal.periodo_critico;
+  const segments = criticalSegments(pc);
+  const labelSeg = segments.reduce<[number, number]>((best, s) => (s[1] - s[0] > best[1] - best[0] ? s : best), segments[0] ?? [0, 0]);
+  const labelEnd = labelSeg[0] > 26;
   const breaks = sqrtBreaks(grid.max);
 
   const describe = (r: number, w: number) => {
@@ -38,7 +41,7 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
       <div>
         <strong>{y}, semana de {cal.semanas[w]}</strong>
         <div>{val}</div>
-        {pc && w >= pc.semana_inicio && w <= pc.semana_fim && <div>Dentro do período crítico</div>}
+        {inCriticalPeriod(cal, w) && <div>Dentro do período crítico</div>}
         <div style={{ opacity: 0.8 }}>{y <= 2021 ? 'MODIS observado' : 'VIIRS convertido (equipe)'}</div>
       </div>
     );
@@ -64,7 +67,7 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
   return (
     <>
       <div className="calendario-wrap">
-        <svg className="grafico" viewBox={`0 0 ${width} ${height}`} style={{ minWidth: 560 }} role="img" tabIndex={0}
+        <svg className="grafico" viewBox={`0 0 ${width} ${height}`} role="img" tabIndex={0}
              aria-label={`Calendário semanal de ${cal.nome}, ${grid.years[0]} a ${grid.years[grid.years.length - 1]}. Use as setas para percorrer as semanas.`}
              onKeyDown={onKey} onBlur={() => { setFocus(null); hide(); }} data-testid="calendario-semanal">
           <HatchDefs />
@@ -89,11 +92,15 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
           ))}
           {pc && (
             <g aria-hidden="true">
-              <rect x={LEFT + pc.semana_inicio * (CW + GAP) - 2} y={TOP - 20}
-                    width={(pc.semana_fim - pc.semana_inicio + 1) * (CW + GAP) + 2.5}
-                    height={grid.years.length * (CH + GAP) + 21} fill="none" stroke="var(--tinta)" strokeWidth={2} rx={3} />
-              <text x={LEFT + pc.semana_inicio * (CW + GAP)} y={TOP - 26} style={{ fontWeight: 600, fill: 'var(--tinta)' }}>
-                Período crítico {pc.inicio}–{pc.fim}
+              {segments.map(([a, b]) => (
+                <rect key={a} x={LEFT + a * (CW + GAP) - 2} y={TOP - 20}
+                      width={(b - a + 1) * (CW + GAP) + 2.5}
+                      height={grid.years.length * (CH + GAP) + 21} fill="none" stroke="var(--tinta)" strokeWidth={2} rx={3} />
+              ))}
+              {/* rótulo no trecho mais longo; ancorado à direita quando o trecho fica no fim do ano, para não sair do gráfico */}
+              <text x={labelEnd ? LEFT + (labelSeg[1] + 1) * (CW + GAP) : LEFT + labelSeg[0] * (CW + GAP)} y={TOP - 26}
+                    textAnchor={labelEnd ? 'end' : 'start'} style={{ fontWeight: 600, fill: 'var(--tinta)' }}>
+                Período crítico {pc.inicio}–{pc.fim}{segments.length > 1 ? ' (atravessa o ano)' : ''}
               </text>
             </g>
           )}
@@ -102,7 +109,7 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
       <ul className="legenda-linha" aria-label="Legenda do calendário">
         <li><span className="amostra" style={{ background: RAMP[0] }} /> Nenhuma detecção</li>
         {breaks.map((b, i) => (
-          <li key={i}><span className="amostra" style={{ background: RAMP[i + 1] }} /> até {fmtInt(Math.max(1, b))}</li>
+          <li key={i}><span className="amostra" style={{ background: RAMP[i + 1] }} /> até {grid.max < 20 ? fmt1(b) : fmtInt(b)}</li>
         ))}
         <li><span className="amostra hachura" /> Sem dado (semana não publicada)</li>
         <li><span className="amostra" style={{ background: 'transparent', border: '2px solid var(--tinta)' }} /> Período crítico</li>

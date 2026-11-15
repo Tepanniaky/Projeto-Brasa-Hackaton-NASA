@@ -156,7 +156,7 @@ export function SensorSection({ ds, filters, dispatch }: { ds: Dataset; filters:
                          ariaLabel={`Série mensal de ${unit} por sensor em ${region.nome}`} />
               <div className="explicacao" data-testid="explicacao-original">
                 {sensors.length === 2 && totals.MODIS_AQUA > 0 && (
-                  <p>Em {periodo}, o VIIRS/NOAA-20 registrou <strong>{fmtInt(totals.VIIRS_NOAA20)}</strong> {unit} e o MODIS/Aqua <strong>{fmtInt(totals.MODIS_AQUA)}</strong>: {fmt1(totals.VIIRS_NOAA20 / totals.MODIS_AQUA)} vezes mais. Os dois passam por volta das 13h30, mas o pixel do VIIRS (375 m) enxerga focos menores que o do MODIS (1 km).</p>
+                  <p>Em {periodo}, o VIIRS/NOAA-20 registrou <strong>{fmtInt(totals.VIIRS_NOAA20)}</strong> {unit} e o MODIS/Aqua <strong>{fmtInt(totals.MODIS_AQUA)}</strong>: {fmt1(totals.VIIRS_NOAA20 / totals.MODIS_AQUA)} vezes mais. Os dois passam no início da tarde, mas o pixel do VIIRS (375 m) enxerga focos menores que o do MODIS (1 km).</p>
                 )}
                 {sensors.length === 1 && <p>{SENSOR_STYLE[sensors[0]].label}: <strong>{fmtInt(totals[sensors[0]])}</strong> {unit} em {periodo}.</p>}
                 <p className="nota">{metricMeta?.descricao}</p>

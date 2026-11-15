@@ -27,15 +27,6 @@ const TABS: { id: Tab; label: string }[] = [
 
 const fmtDate = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '');
 
-function Mark() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
-      <rect width="32" height="32" rx="6" fill="#34312b" />
-      <g fill="#f0773a"><rect x="6" y="18" width="5" height="8" rx="1" /><rect x="13.5" y="10" width="5" height="16" rx="1" /><rect x="21" y="14" width="5" height="12" rx="1" /></g>
-    </svg>
-  );
-}
-
 function Header({ status, theme, onTheme, onMethod }: {
   status: { kind: 'real' | 'sintetico' | 'carregando' | 'erro'; text: string };
   theme: Theme; onTheme: () => void; onMethod: () => void;
@@ -43,7 +34,9 @@ function Header({ status, theme, onTheme, onMethod }: {
   return (
     <header className="topo">
       <a className="marca" href="./" aria-label="BRASA, página inicial">
-        <Mark /><span className="marca-nome">BRAS<span>A</span></span>
+        <svg className="marca-logo" viewBox="150 130 1860 490" role="img" aria-label="BRASA">
+          <image href={`${import.meta.env.BASE_URL}logo-brasa.png`} width="2172" height="724" />
+        </svg>
       </a>
       <span className="marca-sub">Calendário do fogo na Bahia</span>
       <span className="marca-equipe">OPP Team · NASA Space Apps 2026</span>

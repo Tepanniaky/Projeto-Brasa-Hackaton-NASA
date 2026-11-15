@@ -56,9 +56,19 @@ export function teamWeekGrid(cal: TeamCalendar, yearFrom: number, yearTo: number
   return { years, cells, max };
 }
 
+/**
+ * Trechos [início, fim] (inclusivos) do período crítico. A janela pode atravessar a virada do ano
+ * (ex.: 03/12 a 26/03, semana_inicio 48 > semana_fim 12), o que ocorre em mais da metade dos municípios.
+ */
+export function criticalSegments(pc: TeamCalendar['periodo_critico']): [number, number][] {
+  if (!pc) return [];
+  return pc.semana_inicio <= pc.semana_fim
+    ? [[pc.semana_inicio, pc.semana_fim]]
+    : [[pc.semana_inicio, 51], [0, pc.semana_fim]];
+}
+
 export function inCriticalPeriod(cal: TeamCalendar, week: number): boolean {
-  const pc = cal.periodo_critico;
-  return !!pc && week >= pc.semana_inicio && week <= pc.semana_fim;
+  return criticalSegments(cal.periodo_critico).some(([a, b]) => week >= a && week <= b);
 }
 
 export const ANOMALY_LABEL: Record<AnomalyClass, string> = {

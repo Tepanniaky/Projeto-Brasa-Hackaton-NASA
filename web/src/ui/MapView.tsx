@@ -38,11 +38,12 @@ const RATIO_TOKEN: Record<RatioClass, string> = {
 };
 const ALERT_LABEL = { normal: 'dentro do normal', acima: 'acima do normal (acima do p75)', muito_acima: 'muito acima (acima do p90)' };
 
-const MODES: { id: MapMode; label: string }[] = [
-  { id: 'alerta', label: 'Alerta recente' },
-  { id: 'media', label: 'Média anual' },
-  { id: 'razao', label: 'Ano ÷ normal' },
-  { id: 'atividade', label: 'Por sensor' },
+/** `curto`: rótulo do celular, para os quatro modos caberem numa linha sem cobrir o mapa. */
+const MODES: { id: MapMode; label: string; curto: string }[] = [
+  { id: 'alerta', label: 'Alerta recente', curto: 'Alerta' },
+  { id: 'media', label: 'Média anual', curto: 'Média' },
+  { id: 'razao', label: 'Ano ÷ normal', curto: 'Ano ÷ normal' },
+  { id: 'atividade', label: 'Por sensor', curto: 'Sensor' },
 ];
 
 function centroid(geom: Polygon | MultiPolygon): [number, number] {
@@ -277,7 +278,8 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
               <button key={md.id} type="button" aria-pressed={filters.mapMode === md.id} onClick={() => onMapMode(md.id)}
                       disabled={md.id === 'atividade' && !ds.sensors}
                       title={md.id === 'razao' ? `${year} acumulado ÷ mediana histórica até a data` : undefined}>
-                {md.id === 'razao' ? `${year} ÷ normal` : md.label}
+                <span className="rotulo-longo">{md.id === 'razao' ? `${year} ÷ normal` : md.label}</span>
+                <span className="rotulo-curto">{md.id === 'razao' ? `${year} ÷ normal` : md.curto}</span>
               </button>
             ))}
           </div>

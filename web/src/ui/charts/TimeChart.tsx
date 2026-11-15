@@ -3,9 +3,9 @@
  * faixa opcional de incerteza, faixas sombreadas (ajuste/avaliação) e colunas
  * com indisponibilidade hachuradas. Hover/foco mostram todos os valores do ponto.
  */
-import { type KeyboardEvent, useRef, useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 import { fmt1 } from '../../domain/format';
-import { HATCH_ID, HatchDefs, niceMax, ticks, Tip, useTip } from './common';
+import { HATCH_ID, HatchDefs, niceMax, ticks, Tip, useChartWidth, useTip } from './common';
 
 export interface LineSeries {
   id: string;
@@ -35,11 +35,12 @@ interface Props {
 }
 
 export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel, formatX, tickFor, height = 250, ariaLabel, yMax, compact }: Props) {
-  const W = compact ? 360 : 600;
-  const PAD = compact ? { l: 44, r: 84, t: 22, b: 30 } : { l: 52, r: 118, t: 22, b: 30 };
+  const [svgRef, W] = useChartWidth(compact ? 360 : 600, 280);
+  // estreito (celular ou painel lado a lado): margens menores, rótulos diretos em 11 px
+  const narrow = compact || W < 480;
+  const PAD = narrow ? { l: 60, r: 90, t: 22, b: 30 } : { l: 52, r: 118, t: 22, b: 30 };
   const { tip, show, hide } = useTip();
   const [hover, setHover] = useState<number | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
   const n = labels.length;
   const iw = W - PAD.l - PAD.r;
   const ih = height - PAD.t - PAD.b;
@@ -93,6 +94,15 @@ export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel,
   };
 
   const yt = ticks(ymax);
+  // rótulos do eixo x: descarta os que encostariam no anterior (ex.: 12 meses num celular)
+  const xTicks: { l: string; i: number; t: string }[] = [];
+  labels.forEach((l, i) => {
+    const t = tickFor(l, i);
+    if (!t) return;
+    const prev = xTicks[xTicks.length - 1];
+    if (prev && x(i) - x(prev.i) < (Math.max(t.length, prev.t.length) * 6.2 + 8)) return;
+    xTicks.push({ l, i, t });
+  });
   // rótulos diretos no fim da linha, afastados para não colidir
   const ends = series.map((s) => {
     const last = [...s.values].reverse().find((v) => v !== null) ?? 0;
@@ -121,11 +131,8 @@ export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel,
           </g>
         ))}
         <line className="eixo" x1={PAD.l} x2={PAD.l + iw} y1={PAD.t + ih} y2={PAD.t + ih} />
-        {labels.map((l, i) => {
-          const t = tickFor(l, i);
-          return t ? <text key={l} x={x(i)} y={height - 10} textAnchor="middle">{t}</text> : null;
-        })}
-        <text x={12} y={PAD.t + ih / 2} transform={`rotate(-90 12 ${PAD.t + ih / 2})`} textAnchor="middle">{yLabel}</text>
+        {xTicks.map(({ l, i, t }) => <text key={l} x={x(i)} y={height - 10} textAnchor="middle">{t}</text>)}
+        <text x={narrow ? 10 : 12} y={PAD.t + ih / 2} transform={`rotate(-90 ${narrow ? 10 : 12} ${PAD.t + ih / 2})`} textAnchor="middle">{yLabel}</text>
         {band && <path d={bandPath} fill={band.color} opacity={0.22} />}
         {series.map((s) => (
           <g key={s.id} opacity={s.faded ? 0.45 : 1}>
@@ -137,7 +144,7 @@ export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel,
           </g>
         ))}
         {ends.map(({ s, y: yy }) => (
-          <text key={s.id} className="rotulo-direto" x={PAD.l + iw + 8} y={yy + 4} style={{ fill: s.color }}>{s.label}</text>
+          <text key={s.id} className="rotulo-direto" x={PAD.l + iw + 8} y={yy + 4} style={{ fill: s.color, fontSize: narrow ? 11 : undefined }}>{s.label}</text>
         ))}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + ih} stroke="var(--tinta-3)" strokeWidth={1} />}
         <rect x={PAD.l - step / 2} y={PAD.t} width={iw + step} height={ih} fill="transparent"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sqrtLevel, teamWeekGrid } from '../../src/domain/calendar';
+import { criticalSegments, inCriticalPeriod, sqrtLevel, teamWeekGrid } from '../../src/domain/calendar';
 import { buildRows, CSV_COLUMNS, escapeCsv, toCsv } from '../../src/domain/csv';
 import { adjustmentSummary, currentYearHeadline } from '../../src/domain/explain';
 import { DEFAULT_FILTERS, filtersFromSearch, filtersReducer, filtersToSearch } from '../../src/domain/filters';
@@ -180,5 +180,28 @@ describe('redesign: modos de mapa da série da equipe', () => {
   it('classes de ano ÷ normal são simétricas em torno de 1 e "sem base" não vira zero', () => {
     expect([0.4, 0.8, 1, 1.05, 1.5, 2, null].map(ratioClass))
       .toEqual(['muito_abaixo', 'abaixo', 'normal', 'normal', 'acima', 'muito_acima', 'sem_base']);
+  });
+});
+
+describe('período crítico que atravessa a virada do ano', () => {
+  // 228 dos 417 municípios têm semana_inicio > semana_fim (ex.: Acajutiba, 03/12 a 26/03)
+  const wrapped = { ...teamCal(), periodo_critico: { semana_inicio: 48, semana_fim: 12, inicio: '03/12', fim: '26/03', n_semanas: 17, fracao_da_atividade: 0.8 } };
+
+  it('divide a janela em dois trechos que somam n_semanas', () => {
+    const seg = criticalSegments(wrapped.periodo_critico);
+    expect(seg).toEqual([[48, 51], [0, 12]]);
+    expect(seg.reduce((a, [x, y]) => a + y - x + 1, 0)).toBe(17);
+  });
+
+  it('marca as semanas dos dois lados da virada e não as do meio do ano', () => {
+    expect(inCriticalPeriod(wrapped, 50)).toBe(true);
+    expect(inCriticalPeriod(wrapped, 0)).toBe(true);
+    expect(inCriticalPeriod(wrapped, 12)).toBe(true);
+    expect(inCriticalPeriod(wrapped, 30)).toBe(false);
+  });
+
+  it('mantém o caso comum (sem virada) em um trecho', () => {
+    expect(criticalSegments(teamCal().periodo_critico)).toEqual([[30, 40]]);
+    expect(criticalSegments(null)).toEqual([]);
   });
 });

@@ -151,9 +151,8 @@ code, .hash { font: 400 12px var(--fonte-mono); background: var(--surface-2); pa
   height: 52px; flex: none; background: var(--carvao); color: var(--sobre-carvao);
   display: flex; align-items: center; gap: 14px; padding: 0 var(--gutter); border-bottom: 1px solid #000;
 }
-.marca { display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; }
-.marca-nome { font: 800 27px/1 var(--fonte-titulo); letter-spacing: 0.04em; }
-.marca-nome span { color: var(--brasa-marca); }
+.marca { display: flex; align-items: center; flex: none; text-decoration: none; color: inherit; }
+.marca-logo { display: block; width: 160px; height: 42px; }
 .marca-sub { color: var(--sobre-carvao-2); font-size: 14px; }
 .marca-equipe { color: var(--sobre-carvao-3); font-size: 12px; padding-left: 14px; border-left: 1px solid var(--carvao-3); }
 .cresce { flex: 1; }
@@ -349,6 +348,8 @@ fieldset.campo { border: 0; margin: 0; padding: 0; }
 .chave-faixa { width: 18px; height: 10px; display: inline-block; border-radius: 2px; }
 
 .calendario-wrap { overflow-x: auto; }
+.calendario-wrap .grafico { min-width: 560px; }
+.rotulo-curto { display: none; }
 .cal-celula { cursor: crosshair; }
 .cal-celula:focus { outline: none; }
 
@@ -374,7 +375,7 @@ details.metodo { border-top: 1px solid var(--line); padding: 9px 0; }
 details.metodo summary { cursor: pointer; font-weight: 600; font-size: 15.5px; min-height: 28px; }
 details.metodo[open] summary { margin-bottom: 6px; }
 .metodo ul { padding-left: 20px; margin: 4px 0; }
-.metodo li { margin: 3px 0; font-size: 14px; }
+.metodo li { margin: 3px 0; font-size: 14px; overflow-wrap: anywhere; }
 
 /* estados */
 .estado { padding: 22px; text-align: center; color: var(--ink-2); border: 1px dashed var(--line-2); border-radius: 8px; margin-top: 10px; }
@@ -429,12 +430,28 @@ details.metodo[open] summary { margin-bottom: 6px; }
   .fechar-gaveta { display: block; }
   .acoes-filtros { margin-left: 0; flex-direction: column; }
   .duas-colunas.fixas { grid-template-columns: 1fr; }
-  .mapa-area { height: 56vh; }
-  .legenda { font-size: 12px; padding: 6px 8px; max-width: calc(100% - 64px); }
-  .legenda .nota { display: none; }
-  .legenda li { line-height: 1.25; }
-  .mapa-modos .segmentos button { padding: 3px 8px; }
-  .mapa-modos .segmentos button { min-height: 36px; }
+  /* mapa livre: a legenda sai de cima do mapa e vai logo abaixo dele; os modos ficam numa linha só */
+  .mapa-area { height: auto; min-height: 0; overflow: visible; }
+  .mapa { position: relative; height: 50vh; min-height: 300px; }
+  .legenda {
+    position: static; max-width: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+    font-size: 12.5px; padding: 8px var(--gutter);
+  }
+  .legenda ul { display: flex; flex-wrap: wrap; gap: 3px 14px; }
+  .legenda li { line-height: 1.3; }
+  .mapa-modos { padding: 4px; right: 56px; max-width: none; width: max-content; }
+  .mapa-modos .segmentos { flex-wrap: nowrap; }
+  .mapa-modos .segmentos button { padding: 3px 9px; min-height: 36px; font-size: 13px; }
+  .rotulo-longo { display: none; }
+  .rotulo-curto { display: inline; }
+  .calendario-wrap .grafico { min-width: 700px; }
+  /* abas dividem a largura: as quatro cabem sem rolar */
+  .abas { gap: 0; }
+  .abas button { flex: 1 1 auto; padding: 8px 6px; font-size: 14.5px; }
+  /* alvos de toque de pelo menos 40 px */
+  .segmentos.na-superficie button, .botao-sec { min-height: 40px; }
+  .escova .botao-sec { min-height: 36px; }
+  .maplibregl-ctrl-attrib { font-size: 10.5px; }
   .painel { padding: 14px 12px 32px; }
   .secao { padding: 14px 12px; }
 }

@@ -2,13 +2,12 @@
  * Ano corrente sobre a faixa do normal histórico (camada A).
  * Faixa: p50–p90 da semana; linha: mediana. Pontos do ano: cor + glifo da classe.
  */
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { AnomalyClass, TeamCalendar } from '../../data/types';
 import { ANOMALY_GLYPH, ANOMALY_LABEL } from '../../domain/calendar';
-import { fmt1 } from '../../domain/format';
-import { niceMax, TableToggle, ticks, Tip, useTip } from './common';
+import { fmt1, MONTHS_SHORT } from '../../domain/format';
+import { niceMax, TableToggle, ticks, Tip, useChartWidth, useTip } from './common';
 
-const W = 560;
 const H = 230;
 const PAD = { l: 44, r: 12, t: 14, b: 30 };
 const COLOR: Record<AnomalyClass, string> = {
@@ -26,7 +25,7 @@ function Marker({ cls, x, y }: { cls: AnomalyClass; x: number; y: number }) {
 export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
   const { tip, show, hide } = useTip();
   const [hover, setHover] = useState<number | null>(null);
-  const ref = useRef<SVGSVGElement>(null);
+  const [ref, W] = useChartWidth(560, 280);
   const cur = cal.ano_atual;
   const clim = cal.climatologia;
   const ymax = niceMax(Math.max(1, ...clim.p90, ...cur.semanas.map((s) => s.max)) * 1.05);
@@ -68,13 +67,20 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
           </g>
         ))}
         <line className="eixo" x1={PAD.l} x2={PAD.l + iw} y1={PAD.t + ih} y2={PAD.t + ih} />
-        {cal.semanas.map((s, w) => Number(s.slice(0, 2)) <= 7
-          ? <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{s.slice(3)}/{String(cur.ano).slice(2)}</text> : null)}
+        {cal.semanas.map((s, w) => {
+          if (Number(s.slice(0, 2)) > 7) return null;
+          const m = Number(s.slice(3, 5)) - 1;
+          // estreito: só meses ímpares (jan, mar, …) com nome curto, para os rótulos não se sobreporem
+          if (iw / 12 < 36) return m % 2 ? null : <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{MONTHS_SHORT[m]}</text>;
+          return <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{s.slice(3)}/{String(cur.ano).slice(2)}</text>;
+        })}
         <path d={band} fill="var(--normal)" opacity={0.35} />
         <path d={med} fill="none" stroke="var(--tinta-3)" strokeWidth={1.5} />
         <line x1={x(cur.ultima_semana_completa) + 4} x2={x(cur.ultima_semana_completa) + 4} y1={PAD.t} y2={PAD.t + ih}
               stroke="var(--tinta-3)" strokeDasharray="2 3" />
-        <text x={x(cur.ultima_semana_completa) + 8} y={PAD.t + 10}>sem dado depois daqui</text>
+        {/* perto do fim do ano o rótulo vai para a esquerda da linha, para não sair do gráfico */}
+        <text x={x(cur.ultima_semana_completa) + (cur.ultima_semana_completa > 36 ? 0 : 8)} y={PAD.t + 10}
+              textAnchor={cur.ultima_semana_completa > 36 ? 'end' : 'start'}>sem dado depois daqui</text>
         <path d={line} fill="none" stroke="var(--tinta)" strokeWidth={2} />
         {cur.semanas.map((s) => <Marker key={s.semana} cls={s.classe} x={x(s.semana)} y={y(s.valor)} />)}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + ih} stroke="var(--tinta-3)" />}
