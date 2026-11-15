@@ -22,7 +22,7 @@ NASA FIRMS (CSV anuais, SHA-256)   IBGE (malha)        Equipe (api.rar)
 ```
 
 **Não há** servidor, banco de dados, autenticação ou chave de API. O site é
-estático e pode ser publicado em GitHub Pages ou Vercel, como sugere o roteiro.
+estático e é publicado na Vercel (`web/vercel.json`); também funcionaria no GitHub Pages, como sugeria o roteiro.
 
 ## Separação de responsabilidades
 

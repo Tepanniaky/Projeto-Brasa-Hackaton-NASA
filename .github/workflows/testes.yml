@@ -1,0 +1,51 @@
+# Testes do site a cada push e pull request: unitários, build de produção e E2E nos dados reais.
+#
+# A publicação é feita pela Vercel (integração com o GitHub; configuração em web/vercel.json),
+# que roda só os testes unitários e o build. Este workflow cobre também os testes E2E:
+# se ele ficar vermelho num push no main, a versão publicada pela Vercel tem algo quebrado.
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    name: Unitários, build e E2E
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24   # mesma versão de "engines" em web/package.json
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Instalar dependências (versões fixadas)
+        run: npm ci
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Build de produção
+        run: npm run build
+
+      - name: Testes E2E (Playwright, dados reais)
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+        env:
+          PLAYWRIGHT_HTML_OPEN: never

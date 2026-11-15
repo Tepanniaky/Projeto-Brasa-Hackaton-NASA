@@ -105,19 +105,29 @@ npm run build && npm run preview   # http://localhost:4173
 Os dados já processados estão versionados em `web/public/`, então a interface
 roda sem o pipeline.
 
-## Publicar o site (GitHub Pages)
+## Publicar o site (Vercel)
 
-O workflow `.github/workflows/deploy.yml` roda a cada push no `main` (ou
-manualmente, em **Actions → Publicar site → Run workflow**). Ele roda os testes
-unitários, faz o build e os testes E2E e publica `web/dist` no GitHub Pages.
+O site é publicado pela Vercel (plano gratuito Hobby), ligada a este repositório
+no GitHub. A configuração está versionada em `web/vercel.json`.
 
-- Endereço: https://tepanniaky.github.io/Projeto-Brasa-Hackaton-NASA/
-  (em inglês: acrescente `?lang=en`).
-- Só publica se o Pages estiver ativado em **Settings → Pages → Build and
-  deployment → Source: GitHub Actions**. Sem isso, o workflow testa e gera o
-  build, mas pula a publicação sem falhar.
-- Se algum teste falhar, nada é publicado e o site no ar continua na versão
+- **Produção:** cada push no `main` publica o site. Para enviar o link em
+  inglês, acrescente `?lang=en` ao endereço.
+- **Prévias:** cada branch ou pull request ganha um link próprio. Por padrão,
+  esses links pedem login na Vercel; o link de produção é aberto.
+- **Antes de publicar**, a Vercel roda `npm test && npm run build`. Se um teste
+  unitário falhar, a publicação é cancelada e o site no ar continua na versão
   anterior.
+- **Os testes E2E** rodam no GitHub Actions (`.github/workflows/testes.yml`) a
+  cada push e pull request. Um ✗ vermelho no `main` indica que a versão
+  publicada tem algo quebrado.
+
+**Configuração inicial (uma vez, feita por quem administra o projeto):**
+
+1. Entre em vercel.com com a conta do GitHub.
+2. **Add New → Project**, importe `Tepanniaky/Projeto-Brasa-Hackaton-NASA`.
+3. Em **Root Directory**, escolha `web`. O resto vem do `vercel.json`.
+4. Clique em **Deploy**. Se quiser um endereço mais curto, troque o nome em
+   **Settings → Domains** (ex.: `brasa-bahia.vercel.app`).
 
 ## Reprocessar os dados (pipeline Python)
 

@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "description": "BRASA — calendário explicável de atividade de fogo (NASA FIRMS, MODIS × VIIRS) para a Bahia",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p . && vite build",
