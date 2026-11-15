@@ -4,10 +4,8 @@ Prioridade: **P0** antes da submissão · **P1** fortalece a ciência · **P2** 
 
 ## P0: antes da submissão
 
-1. **Publicar o site estático.**
-   - Escolhido: Vercel (plano Hobby, gratuito). O repositório já está pronto
-     (`web/vercel.json`). Falta importar o projeto na Vercel com Root Directory
-     `web` (passo a passo no README, seção "Publicar o site").
+1. ~~**Publicar o site estático.**~~ Feito em 15/11/2026: https://brasa-bahia.vercel.app/
+   (Vercel, plano Hobby; versão em inglês com `?lang=en`).
    - Confirme na página oficial do desafio se o repositório precisa ser público.
 2. **Combinar com a equipe a mensagem sobre a série harmonizada.**
    - A auditoria mostra a série convertida de 11 % a 23 % abaixo do MODIS

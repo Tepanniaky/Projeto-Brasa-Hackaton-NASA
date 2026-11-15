@@ -4,6 +4,9 @@
 
 > "Estamos observando mais fogo ou apenas enxergando melhor?"
 
+**Site no ar:** https://brasa-bahia.vercel.app/ ·
+**English version:** https://brasa-bahia.vercel.app/?lang=en
+
 O BRASA transforma registros NASA FIRMS em um calendário explicável da
 atividade de fogo detectada na Bahia e nos seus 417 municípios. Ele mostra,
 sempre separados:
@@ -110,8 +113,8 @@ roda sem o pipeline.
 O site é publicado pela Vercel (plano gratuito Hobby), ligada a este repositório
 no GitHub. A configuração está versionada em `web/vercel.json`.
 
-- **Produção:** cada push no `main` publica o site. Para enviar o link em
-  inglês, acrescente `?lang=en` ao endereço.
+- **Produção:** https://brasa-bahia.vercel.app/. Cada push no `main` publica
+  o site. Para enviar o link em inglês, acrescente `?lang=en` ao endereço.
 - **Prévias:** cada branch ou pull request ganha um link próprio. Por padrão,
   esses links pedem login na Vercel; o link de produção é aberto.
 - **Antes de publicar**, a Vercel roda `npm test && npm run build`. Se um teste
