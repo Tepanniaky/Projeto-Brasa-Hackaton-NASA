@@ -8,9 +8,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './ui/App';
 import './ui/styles.css';
+import { initialLang, setLang } from './i18n/lang';
 import { applyTheme, initialTheme } from './ui/theme';
 
 applyTheme(initialTheme());
+// idioma detectado não é gravado: só uma escolha explícita no seletor fica salva
+setLang(initialLang(), false);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

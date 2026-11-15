@@ -6,6 +6,7 @@
 import { useRef, useState } from 'react';
 import type { TeamCalendar } from '../../data/types';
 import { fmt1 } from '../../domain/format';
+import { tr } from '../../i18n/lang';
 import { TableToggle, Tip, useTip } from './common';
 
 export function AnnualChart({ cal, yearFrom, yearTo, onRange }: {
@@ -30,18 +31,19 @@ export function AnnualChart({ cal, yearFrom, yearTo, onRange }: {
   };
 
   const tipFor = (r: TeamCalendar['anual'][number]) => (
-    <div><strong>{r.ano}{r.parcial ? ' · parcial' : ''}</strong><div>{fmt1(r.valor)} detecções harmonizadas</div>
-      {r.max > r.min ? <div>Faixa da conversão (5–95 %): {fmt1(r.min)} a {fmt1(r.max)}</div> : <div>MODIS observado</div>}</div>
+    <div><strong>{r.ano}{r.parcial ? tr(' · parcial', ' · partial') : ''}</strong><div>{fmt1(r.valor)} {tr('detecções harmonizadas', 'harmonized detections')}</div>
+      {r.max > r.min ? <div>{tr('Faixa da conversão (5–95 %)', 'Conversion band (5–95%)')}: {fmt1(r.min)} {tr('a', 'to')} {fmt1(r.max)}</div> : <div>{tr('MODIS observado', 'MODIS observed')}</div>}</div>
   );
 
   return (
     <div className="escova">
       <div className="escova-topo">
-        <span><b>Total por ano</b> · {cal.nome} · detecções harmonizadas (equiv. MODIS)</span>
-        <span><b>{lo === hi ? lo : `${lo}–${hi}`}</b> · arraste para escolher o período</span>
+        <span><b>{tr('Total por ano', 'Total per year')}</b> · {cal.nome} · {tr('detecções harmonizadas (equiv. MODIS)', 'harmonized detections (MODIS equiv.)')}</span>
+        <span><b>{lo === hi ? lo : `${lo}–${hi}`}</b> · {tr('arraste para escolher o período', 'drag to choose the period')}</span>
       </div>
       <div ref={barsRef} className="barras" data-testid="grafico-anual" role="img"
-           aria-label={`Total anual de ${cal.nome}; arraste para escolher o período ou use os seletores de ano nos filtros`}
+           aria-label={tr(`Total anual de ${cal.nome}; arraste para escolher o período ou use os seletores de ano nos filtros`,
+                           `Annual total for ${cal.nome}; drag to choose the period or use the year selectors in the filters`)}
            onPointerDown={(e) => {
              const y = yearAt(e.clientX, e.clientY);
              if (y === null) return;
@@ -75,16 +77,16 @@ export function AnnualChart({ cal, yearFrom, yearTo, onRange }: {
         })}
       </div>
       <ul className="legenda-linha">
-        <li><span className="chave-faixa" style={{ background: 'var(--tinta)' }} /> até 2021: MODIS observado</li>
-        <li><span className="chave-faixa" style={{ width: 3, background: 'var(--brasa)' }} /> desde 2022: VIIRS convertido, faixa 5–95 %</li>
-        <li><span className="amostra hachura" style={{ height: 10 }} /> ano parcial</li>
+        <li><span className="chave-faixa" style={{ background: 'var(--tinta)' }} /> {tr('até 2021: MODIS observado', 'through 2021: MODIS observed')}</li>
+        <li><span className="chave-faixa" style={{ width: 3, background: 'var(--brasa)' }} /> {tr('desde 2022: VIIRS convertido, faixa 5–95 %', 'since 2022: VIIRS converted, 5–95% band')}</li>
+        <li><span className="amostra hachura" style={{ height: 10 }} /> {tr('ano parcial', 'partial year')}</li>
       </ul>
-      <TableToggle label="totais anuais">
+      <TableToggle label={tr('totais anuais', 'annual totals')}>
         <table className="dados">
-          <thead><tr><th>Ano</th><th>Valor</th><th>Mín.</th><th>Máx.</th><th>Origem</th></tr></thead>
+          <thead><tr><th>{tr('Ano', 'Year')}</th><th>{tr('Valor', 'Value')}</th><th>{tr('Mín.', 'Min.')}</th><th>{tr('Máx.', 'Max.')}</th><th>{tr('Origem', 'Source')}</th></tr></thead>
           <tbody>{rows.map((r) => (
-            <tr key={r.ano}><td>{r.ano}{r.parcial ? ' (parcial)' : ''}</td><td>{fmt1(r.valor)}</td><td>{fmt1(r.min)}</td>
-              <td>{fmt1(r.max)}</td><td>{r.ano <= 2021 ? 'MODIS observado' : 'VIIRS convertido'}</td></tr>
+            <tr key={r.ano}><td>{r.ano}{r.parcial ? tr(' (parcial)', ' (partial)') : ''}</td><td>{fmt1(r.valor)}</td><td>{fmt1(r.min)}</td>
+              <td>{fmt1(r.max)}</td><td>{r.ano <= 2021 ? tr('MODIS observado', 'MODIS observed') : tr('VIIRS convertido', 'VIIRS converted')}</td></tr>
           ))}</tbody>
         </table>
       </TableToggle>

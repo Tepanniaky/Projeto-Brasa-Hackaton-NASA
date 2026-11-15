@@ -3,6 +3,7 @@
  * período crítico. Puras e testáveis.
  */
 import type { AnomalyClass, TeamCalendar } from '../data/types';
+import { tr } from '../i18n/lang';
 
 export type CellState =
   | { kind: 'sem_dado' }          // dado ainda não publicado (ano corrente) ou sensor indisponível
@@ -71,12 +72,13 @@ export function inCriticalPeriod(cal: TeamCalendar, week: number): boolean {
   return criticalSegments(cal.periodo_critico).some(([a, b]) => week >= a && week <= b);
 }
 
-export const ANOMALY_LABEL: Record<AnomalyClass, string> = {
-  muito_acima: 'Muito acima do normal',
-  acima: 'Acima do normal',
-  normal: 'Dentro do normal',
-  abaixo: 'Abaixo do normal',
+const ANOMALY_LABEL: Record<AnomalyClass, [string, string]> = {
+  muito_acima: ['Muito acima do normal', 'Well above normal'],
+  acima: ['Acima do normal', 'Above normal'],
+  normal: ['Dentro do normal', 'Within normal'],
+  abaixo: ['Abaixo do normal', 'Below normal'],
 };
+export const anomalyLabel = (c: AnomalyClass): string => tr(...ANOMALY_LABEL[c]);
 
 /** Símbolo textual que acompanha a cor (informação não depende só de cor). */
 export const ANOMALY_GLYPH: Record<AnomalyClass, string> = {

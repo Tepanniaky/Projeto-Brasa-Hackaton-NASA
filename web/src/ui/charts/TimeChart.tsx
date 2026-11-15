@@ -5,6 +5,7 @@
  */
 import { type KeyboardEvent, useState } from 'react';
 import { fmt1 } from '../../domain/format';
+import { tr } from '../../i18n/lang';
 import { HATCH_ID, HatchDefs, niceMax, ticks, Tip, useChartWidth, useTip } from './common';
 
 export interface LineSeries {
@@ -69,11 +70,11 @@ export function TimeChart({ labels, series, band, shade = [], gaps = [], yLabel,
   const tipContent = (i: number) => (
     <div>
       <strong>{formatX(labels[i])}</strong>
-      {gaps.includes(i) && <div>⚠ sensor de referência com falha parcial</div>}
+      {gaps.includes(i) && <div>⚠ {tr('sensor de referência com falha parcial', 'reference sensor with partial outage')}</div>}
       {series.map((s) => (
-        <div key={s.id}>{s.label}: {s.values[i] === null ? 'sem dado' : fmt1(s.values[i] as number)}</div>
+        <div key={s.id}>{s.label}: {s.values[i] === null ? tr('sem dado', 'no data') : fmt1(s.values[i] as number)}</div>
       ))}
-      {band && <div>{band.label}: {fmt1(band.lo[i])} a {fmt1(band.hi[i])}</div>}
+      {band && <div>{band.label}: {fmt1(band.lo[i])} {tr('a', 'to')} {fmt1(band.hi[i])}</div>}
     </div>
   );
 

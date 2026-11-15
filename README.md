@@ -30,6 +30,13 @@ sempre separados:
 - **Identidade BRASA**: logo nova, tema escuro como padrão e tema claro
   (para sala iluminada e impressão) no botão ◐. A escolha fica salva no
   navegador.
+- **Português e inglês**: o seletor **PT | EN** fica no cabeçalho, também no
+  celular, e troca toda a interface: textos, frases calculadas, legendas,
+  tabelas, números (14.409 → 14,409) e datas (16/07 → Jul 16). Na primeira
+  visita, o site segue o idioma do navegador; depois, vale a escolha salva.
+  Para enviar um link já em inglês, acrescente `?lang=en` (exemplo:
+  `…/?lang=en&local=2911105&aba=sens`). Os JSON continuam em português; a
+  tradução dos textos que vêm deles fica em `web/src/i18n/dataText.ts`.
 - **Mapa** dos 417 municípios (MapLibre), com quatro modos:
   - **Alerta recente**: últimas 4 semanas comparadas ao normal da semana
     (série da equipe);
@@ -137,8 +144,8 @@ colunas):
 
 ```bash
 cd pipeline && .venv/bin/python -m pytest -q        # 19 testes: qualidade, dia local, agregação, separação temporal, auditoria, exemplo e2e
-cd web && npm test                                  # 24 testes unitários: filtros, recortes, calendário, CSV, mapa, explicações
-cd web && npm run build && PLAYWRIGHT_HTML_OPEN=never npx playwright test   # 12 testes E2E nos dados reais (inclui temas e celular)
+cd web && npm test                                  # 31 testes unitários: filtros, recortes, calendário, CSV, mapa, explicações, idioma
+cd web && npm run build && PLAYWRIGHT_HTML_OPEN=never npx playwright test   # 16 testes E2E nos dados reais (inclui temas, idioma e celular)
 ```
 
 ## Estrutura
@@ -160,6 +167,9 @@ web/public/api       camada A (equipe) · web/public/data/real camada B (pipelin
 1. Leia `docs/SCOPE.md` (critérios de aceite) e `docs/NEXT_STEPS.md` (prioridades).
 2. Antes de mudar um JSON, atualize juntos `docs/DATA_CONTRACTS.md`,
    `web/src/data/types.ts` e `schema_version`.
+   Texto novo na interface vai com as duas versões: `tr('português', 'English')`
+   (`web/src/i18n/lang.ts`). Se o pipeline passar a publicar um texto novo, o
+   teste `tests/unit/i18n.test.ts` falha até ele ganhar tradução em `dataText.ts`.
 3. Regra de ouro: nunca somar MODIS com VIIRS, nunca converter focos em área,
    nunca tratar ausência de detecção como ausência de fogo.
 

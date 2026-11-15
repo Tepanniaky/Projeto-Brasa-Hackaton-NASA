@@ -7,6 +7,7 @@
  * - promoteId = cod_mun: necessário para feature-state (cor, hover e seleção).
  * - Cores lidas dos tokens do tema (CSS custom properties), relidas a cada troca de tema.
  * - Estados não dependem só de cor: alerta usa anéis de tamanho diferente no centroide; seleção usa contorno.
+ * - Textos em português ou inglês; a atribuição dentro do mapa é recriada ao trocar o idioma.
  */
 import { AttributionControl, Map as MLMap, NavigationControl, setWorkerUrl, type StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
@@ -17,6 +18,7 @@ import type { Dataset } from '../data/types';
 import type { Filters, MapMode } from '../domain/filters';
 import { fmt1, fmtInt } from '../domain/format';
 import { activityValues, classOf, meanDensityValues, polygonAreaKm2, type RatioClass, ratioClass } from '../domain/mapValues';
+import { type Lang, tr } from '../i18n/lang';
 import type { Theme } from './theme';
 
 setWorkerUrl(workerUrl);
@@ -36,15 +38,20 @@ const token = (name: string) => getComputedStyle(document.documentElement).getPr
 const RATIO_TOKEN: Record<RatioClass, string> = {
   muito_acima: '--al2', acima: '--al1', normal: '--zero', abaixo: '--b1', muito_abaixo: '--b2', sem_base: '--band',
 };
-const ALERT_LABEL = { normal: 'dentro do normal', acima: 'acima do normal (acima do p75)', muito_acima: 'muito acima (acima do p90)' };
+const alertLabel = (a: 'normal' | 'acima' | 'muito_acima') => ({
+  normal: tr('dentro do normal', 'within normal'),
+  acima: tr('acima do normal (acima do p75)', 'above normal (above p75)'),
+  muito_acima: tr('muito acima (acima do p90)', 'well above (above p90)'),
+})[a];
 
 /** `curto`: rótulo do celular, para os quatro modos caberem numa linha sem cobrir o mapa. */
-const MODES: { id: MapMode; label: string; curto: string }[] = [
-  { id: 'alerta', label: 'Alerta recente', curto: 'Alerta' },
-  { id: 'media', label: 'Média anual', curto: 'Média' },
-  { id: 'razao', label: 'Ano ÷ normal', curto: 'Ano ÷ normal' },
-  { id: 'atividade', label: 'Por sensor', curto: 'Sensor' },
+const MODES: { id: MapMode; label: [string, string]; curto: [string, string] }[] = [
+  { id: 'alerta', label: ['Alerta recente', 'Recent alert'], curto: ['Alerta', 'Alert'] },
+  { id: 'media', label: ['Média anual', 'Annual mean'], curto: ['Média', 'Mean'] },
+  { id: 'razao', label: ['Ano ÷ normal', 'Year ÷ normal'], curto: ['Ano ÷ normal', 'Year ÷ normal'] },
+  { id: 'atividade', label: ['Por sensor', 'By sensor'], curto: ['Sensor', 'Sensor'] },
 ];
+const attribution = () => tr('Limites municipais: IBGE · Dados: NASA FIRMS', 'Municipal boundaries: IBGE · Data: NASA FIRMS');
 
 function centroid(geom: Polygon | MultiPolygon): [number, number] {
   const ring = geom.type === 'Polygon' ? geom.coordinates[0]
@@ -58,15 +65,18 @@ interface Props {
   ds: Dataset;
   filters: Filters;
   theme: Theme;
+  lang: Lang;
   onSelect: (cod: string) => void;
   onMapMode: (m: MapMode) => void;
   /** conteúdo abaixo do mapa (a série anual que escolhe o período) */
   children?: React.ReactNode;
 }
 
-export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: Props) {
+export function MapView({ ds, filters, theme, lang, onSelect, onMapMode, children }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<MLMap | null>(null);
+  const attrib = useRef<AttributionControl | null>(null);
+  const attribLang = useRef(lang);
   const fellBack = useRef(false);
   const firstTheme = useRef(theme);
   const [rev, setRev] = useState(0);             // muda quando as camadas próprias são (re)criadas
@@ -77,8 +87,9 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
 
   const names = useMemo(() => new Map(ds.teamIndex.map((m) => [m.cod_mun, m])), [ds.teamIndex]);
   const areas = useMemo(() => new Map(ds.municipalities.features.map((f) => [f.properties.cod_mun, polygonAreaKm2(f.geometry)])), [ds.municipalities]);
-  const media = useMemo(() => meanDensityValues(ds.teamIndex, areas), [ds.teamIndex, areas]);
-  const activity = useMemo(() => (filters.mapMode === 'atividade' ? activityValues(ds, filters) : null), [ds, filters]);
+  // o idioma entra nas dependências porque os rótulos das legendas são calculados aqui
+  const media = useMemo(() => meanDensityValues(ds.teamIndex, areas), [ds.teamIndex, areas, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  const activity = useMemo(() => (filters.mapMode === 'atividade' ? activityValues(ds, filters) : null), [ds, filters, lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const year = ds.teamState.ano_atual.ano;
 
   const points = useMemo<FeatureCollection<Point, { cod_mun: string; alerta: string }>>(() => ({
@@ -148,7 +159,8 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
     });
     map.current = m;
     m.addControl(new NavigationControl({ showCompass: false }), 'top-right');
-    m.addControl(new AttributionControl({ compact: true, customAttribution: 'Limites municipais: IBGE · Dados: NASA FIRMS' }), 'bottom-right');
+    attrib.current = new AttributionControl({ compact: true, customAttribution: attribution() });
+    m.addControl(attrib.current, 'bottom-right');
     m.once('load', () => addOwnLayers.current());
     // Mapa de fundo indisponível (offline, bloqueio): cai para fundo liso, sem travar a aplicação.
     const timer = window.setTimeout(() => { if (!m.isStyleLoaded()) fallback(); }, 8000);
@@ -190,6 +202,16 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
     m.once('style.load', () => addOwnLayers.current());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
+
+  // troca de idioma: a atribuição do MapLibre não tem setter, então o controle é recriado
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !attrib.current || attribLang.current === lang) return;
+    attribLang.current = lang;
+    m.removeControl(attrib.current);
+    attrib.current = new AttributionControl({ compact: true, customAttribution: attribution() });
+    m.addControl(attrib.current, 'bottom-right');
+  }, [lang]);
 
   // cor de cada município conforme o modo
   const colorOf = useMemo(() => {
@@ -247,18 +269,22 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
   const hoverText = (cod: string): string => {
     const it = names.get(cod);
     switch (filters.mapMode) {
-      case 'alerta': return `Últimas 4 semanas: ${ALERT_LABEL[it?.alerta_ultimas_4_semanas ?? 'normal']}`;
+      case 'alerta': return `${tr('Últimas 4 semanas', 'Last 4 weeks')}: ${alertLabel(it?.alerta_ultimas_4_semanas ?? 'normal')}`;
       case 'media': {
         const v = media.values.get(cod);
-        return v === null || v === undefined ? 'área indisponível' : v > 0 ? `${fmt1(v)} detecções harmonizadas/ano por 1.000 km²` : 'nenhuma detecção no histórico';
+        return v === null || v === undefined ? tr('área indisponível', 'area unavailable')
+          : v > 0 ? tr(`${fmt1(v)} detecções harmonizadas/ano por 1.000 km²`, `${fmt1(v)} harmonized detections/year per 1,000 km²`)
+          : tr('nenhuma detecção no histórico', 'no detections on record');
       }
       case 'razao': {
         const r = it?.razao_ano_atual_vs_mediana;
-        return r === null || r === undefined ? 'sem base histórica para comparar' : `${year}: ${fmt1(r)}× a mediana histórica até a data`;
+        return r === null || r === undefined ? tr('sem base histórica para comparar', 'no historical baseline to compare')
+          : tr(`${year}: ${fmt1(r)}× a mediana histórica até a data`, `${year}: ${fmt1(r)}× the historical median to date`);
       }
       case 'atividade': {
         const v = activity?.values.get(cod);
-        return v === null || v === undefined ? 'sem valor calculável' : `${fmt1(v)}${activity?.kind === 'razao' ? '×' : ' por 1.000 km²'}`;
+        return v === null || v === undefined ? tr('sem valor calculável', 'no computable value')
+          : `${fmt1(v)}${activity?.kind === 'razao' ? '×' : tr(' por 1.000 km²', ' per 1,000 km²')}`;
       }
     }
   };
@@ -266,20 +292,21 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
   const Sw = ({ c, children, hatch }: { c?: string; children: React.ReactNode; hatch?: boolean }) => (
     <li><span className={`amostra${hatch ? ' hachura' : ''}`} style={c ? { background: `var(${c})` } : undefined} />{children}</li>
   );
-  const agg = <p className="nota">Agregação por município (417). Não são pontos de detecção nem área queimada.</p>;
+  const agg = <p className="nota">{tr('Agregação por município (417). Não são pontos de detecção nem área queimada.', 'Aggregated by municipality (417). These are not detection points or burned area.')}</p>;
+  const upTo = (v: string) => tr(`até ${v}`, `up to ${v}`);
 
   return (
-    <section className="coluna-mapa" aria-label="Mapa dos municípios da Bahia">
+    <section className="coluna-mapa" aria-label={tr('Mapa dos municípios da Bahia', 'Map of Bahia municipalities')}>
       <div className="mapa-area">
         <div ref={el} className="mapa" data-testid="mapa" />
         <div className="cartao mapa-modos">
-          <div className="segmentos na-superficie" role="group" aria-label="O que o mapa mostra">
+          <div className="segmentos na-superficie" role="group" aria-label={tr('O que o mapa mostra', 'What the map shows')}>
             {MODES.map((md) => (
               <button key={md.id} type="button" aria-pressed={filters.mapMode === md.id} onClick={() => onMapMode(md.id)}
                       disabled={md.id === 'atividade' && !ds.sensors}
-                      title={md.id === 'razao' ? `${year} acumulado ÷ mediana histórica até a data` : undefined}>
-                <span className="rotulo-longo">{md.id === 'razao' ? `${year} ÷ normal` : md.label}</span>
-                <span className="rotulo-curto">{md.id === 'razao' ? `${year} ÷ normal` : md.curto}</span>
+                      title={md.id === 'razao' ? tr(`${year} acumulado ÷ mediana histórica até a data`, `${year} cumulative ÷ historical median to date`) : undefined}>
+                <span className="rotulo-longo">{md.id === 'razao' ? `${year} ÷ normal` : tr(...md.label)}</span>
+                <span className="rotulo-curto">{md.id === 'razao' ? `${year} ÷ normal` : tr(...md.curto)}</span>
               </button>
             ))}
           </div>
@@ -287,35 +314,35 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
         <div className="cartao legenda" data-testid="legenda-mapa">
           {filters.mapMode === 'alerta' && (
             <>
-              <div className="legenda-titulo">Últimas 4 semanas × normal da semana</div>
+              <div className="legenda-titulo">{tr('Últimas 4 semanas × normal da semana', 'Last 4 weeks × normal for those weeks')}</div>
               <ul>
-                <Sw c="--al2">◉ Muito acima (acima do p90)</Sw>
-                <Sw c="--al1">○ Acima (acima do p75)</Sw>
-                <Sw c="--zero">Dentro do normal</Sw>
+                <Sw c="--al2">◉ {tr('Muito acima (acima do p90)', 'Well above (above p90)')}</Sw>
+                <Sw c="--al1">○ {tr('Acima (acima do p75)', 'Above (above p75)')}</Sw>
+                <Sw c="--zero">{tr('Dentro do normal', 'Within normal')}</Sw>
               </ul>
-              <p className="nota">Série da equipe. Comparação histórica, não alerta operacional.</p>
+              <p className="nota">{tr('Série da equipe. Comparação histórica, não alerta operacional.', 'Team series. Historical comparison, not an operational alert.')}</p>
             </>
           )}
           {filters.mapMode === 'media' && (
             <>
               <div className="legenda-titulo">{media.label}</div>
               <ul>
-                {media.breaks.map((b, i) => <Sw key={i} c={`--r${i + 1}`}>até {fmt1(b)}</Sw>)}
-                <Sw c="--zero">Nenhuma detecção</Sw>
+                {media.breaks.map((b, i) => <Sw key={i} c={`--r${i + 1}`}>{upTo(fmt1(b))}</Sw>)}
+                <Sw c="--zero">{tr('Nenhuma detecção', 'No detections')}</Sw>
               </ul>
-              <p className="nota">Detecções harmonizadas (equiv. MODIS) · classes por quintis.</p>
+              <p className="nota">{tr('Detecções harmonizadas (equiv. MODIS) · classes por quintis.', 'Harmonized detections (MODIS equiv.) · quintile classes.')}</p>
             </>
           )}
           {filters.mapMode === 'razao' && (
             <>
-              <div className="legenda-titulo">{year} acumulado ÷ mediana histórica até a data</div>
+              <div className="legenda-titulo">{tr(`${year} acumulado ÷ mediana histórica até a data`, `${year} cumulative ÷ historical median to date`)}</div>
               <ul>
-                <Sw c="--al2">2× ou mais</Sw>
-                <Sw c="--al1">1,05–2×</Sw>
-                <Sw c="--zero">perto do normal (±5 %)</Sw>
-                <Sw c="--b1">0,5–0,95×</Sw>
-                <Sw c="--b2">menos da metade</Sw>
-                <Sw c="--band">sem base histórica</Sw>
+                <Sw c="--al2">{tr('2× ou mais', '2× or more')}</Sw>
+                <Sw c="--al1">{tr('1,05–2×', '1.05–2×')}</Sw>
+                <Sw c="--zero">{tr('perto do normal (±5 %)', 'near normal (±5%)')}</Sw>
+                <Sw c="--b1">{tr('0,5–0,95×', '0.5–0.95×')}</Sw>
+                <Sw c="--b2">{tr('menos da metade', 'less than half')}</Sw>
+                <Sw c="--band">{tr('sem base histórica', 'no historical baseline')}</Sw>
               </ul>
             </>
           )}
@@ -323,23 +350,23 @@ export function MapView({ ds, filters, theme, onSelect, onMapMode, children }: P
             <>
               <div className="legenda-titulo">{activity.label}</div>
               <ul>
-                {activity.breaks.map((b, i) => <Sw key={i} c={`--r${i + 1}`}>até {fmt1(b)}{activity.kind === 'razao' ? '×' : ''}</Sw>)}
-                <Sw c="--zero">Nenhuma detecção</Sw>
-                {activity.kind === 'razao' && <Sw c="--band">MODIS sem detecção (razão indefinida)</Sw>}
+                {activity.breaks.map((b, i) => <Sw key={i} c={`--r${i + 1}`}>{upTo(`${fmt1(b)}${activity.kind === 'razao' ? '×' : ''}`)}</Sw>)}
+                <Sw c="--zero">{tr('Nenhuma detecção', 'No detections')}</Sw>
+                {activity.kind === 'razao' && <Sw c="--band">{tr('MODIS sem detecção (razão indefinida)', 'No MODIS detection (ratio undefined)')}</Sw>}
               </ul>
-              {activity.kind === 'razao' && <p className="nota">Os sensores não são somados: o mapa mostra quantas vezes o VIIRS registra mais que o MODIS.</p>}
+              {activity.kind === 'razao' && <p className="nota">{tr('Os sensores não são somados: o mapa mostra quantas vezes o VIIRS registra mais que o MODIS.', 'The sensors are not added together: the map shows how many times more VIIRS records than MODIS.')}</p>}
             </>
-          ) : <p className="nota">Dados por sensor indisponíveis para o período (cobrem 2020–2025).</p>)}
+          ) : <p className="nota">{tr('Dados por sensor indisponíveis para o período (cobrem 2020–2025).', 'Sensor data unavailable for this period (they cover 2020–2025).')}</p>)}
           {agg}
         </div>
         {basemapFailed && (
-          <div className="cartao mapa-aviso" role="status">Mapa de fundo indisponível (sem conexão com OpenFreeMap). Os municípios continuam clicáveis.</div>
+          <div className="cartao mapa-aviso" role="status">{tr('Mapa de fundo indisponível (sem conexão com OpenFreeMap). Os municípios continuam clicáveis.', 'Basemap unavailable (no connection to OpenFreeMap). Municipalities remain clickable.')}</div>
         )}
         {hover && hoverItem && (
           <div className="mapa-tooltip" style={{ left: hover.x, top: hover.y }}>
             <strong>{hoverItem.nome}</strong>
             <div>{hoverText(hover.cod)}</div>
-            {filters.mapMode === 'media' && <div style={{ opacity: 0.8 }}>Média anual: {fmtInt(hoverItem.media_anual)}</div>}
+            {filters.mapMode === 'media' && <div style={{ opacity: 0.8 }}>{tr('Média anual', 'Annual mean')}: {fmtInt(hoverItem.media_anual)}</div>}
           </div>
         )}
       </div>

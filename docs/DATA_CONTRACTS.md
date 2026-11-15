@@ -121,6 +121,7 @@ Regras de interpretação aplicadas pela interface:
 - **Formato:** RFC 4180, separador `,`, ponto decimal, UTF-8 com BOM.
 - **Nome:** `brasa_<local>_<de>-<ate>_<visao>.csv`.
 - **Colunas:** `camada, tipo_dado, regiao_cod, regiao_nome, periodo, ano, mes, semana, serie, metrica, unidade, valor, valor_min, valor_max, divisao_harmonizacao, versao_produto, observacao, filtros`.
+- **Idioma:** nomes de colunas e códigos (`camada`, `serie`, `metrica`, `divisao_harmonizacao`, `filtros`…) são fixos. Só os textos livres `unidade` e `observacao` seguem o idioma escolhido na interface (português ou inglês); números saem sempre com ponto decimal.
 - **Linhas:**
   - `camada = A_equipe`: semanas da série da equipe no período. As semanas não
     publicadas saem com `valor` vazio.

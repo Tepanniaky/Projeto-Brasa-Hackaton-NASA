@@ -5,7 +5,9 @@
 import { type KeyboardEvent, useMemo, useState } from 'react';
 import type { TeamCalendar } from '../../data/types';
 import { type CellState, criticalSegments, inCriticalPeriod, sqrtBreaks, teamWeekGrid } from '../../domain/calendar';
-import { fmt1, fmtInt, MONTHS_SHORT } from '../../domain/format';
+import { fmt1, fmtDayMonth, fmtInt, monthsShort } from '../../domain/format';
+import { criticalRange } from '../../domain/explain';
+import { tr } from '../../i18n/lang';
 import { HATCH_ID, HatchDefs, RAMP, TableToggle, Tip, useTip } from './common';
 
 const CW = 12;
@@ -35,14 +37,15 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
   const describe = (r: number, w: number) => {
     const c = grid.cells[r][w];
     const y = grid.years[r];
-    const val = c.kind === 'valor' ? `${fmt1(c.value)} detecções harmonizadas`
-      : c.kind === 'zero' ? 'nenhuma detecção (não prova ausência de fogo)' : 'sem dado: semana ainda não publicada';
+    const val = c.kind === 'valor' ? `${fmt1(c.value)} ${tr('detecções harmonizadas', 'harmonized detections')}`
+      : c.kind === 'zero' ? tr('nenhuma detecção (não prova ausência de fogo)', 'no detections (does not prove absence of fire)')
+      : tr('sem dado: semana ainda não publicada', 'no data: week not yet published');
     return (
       <div>
-        <strong>{y}, semana de {cal.semanas[w]}</strong>
+        <strong>{y}, {tr('semana de', 'week of')} {fmtDayMonth(cal.semanas[w])}</strong>
         <div>{val}</div>
-        {inCriticalPeriod(cal, w) && <div>Dentro do período crítico</div>}
-        <div style={{ opacity: 0.8 }}>{y <= 2021 ? 'MODIS observado' : 'VIIRS convertido (equipe)'}</div>
+        {inCriticalPeriod(cal, w) && <div>{tr('Dentro do período crítico', 'Inside the critical period')}</div>}
+        <div style={{ opacity: 0.8 }}>{y <= 2021 ? tr('MODIS observado', 'MODIS observed') : tr('VIIRS convertido (equipe)', 'VIIRS converted (team)')}</div>
       </div>
     );
   };
@@ -61,24 +64,26 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
   };
 
   if (!grid.years.length) {
-    return <p className="estado">Nenhum ano do calendário cai no período selecionado.</p>;
+    return <p className="estado">{tr('Nenhum ano do calendário cai no período selecionado.', 'No calendar year falls within the selected period.')}</p>;
   }
 
+  const months = monthsShort();
   return (
     <>
       <div className="calendario-wrap">
         <svg className="grafico" viewBox={`0 0 ${width} ${height}`} role="img" tabIndex={0}
-             aria-label={`Calendário semanal de ${cal.nome}, ${grid.years[0]} a ${grid.years[grid.years.length - 1]}. Use as setas para percorrer as semanas.`}
+             aria-label={tr(`Calendário semanal de ${cal.nome}, ${grid.years[0]} a ${grid.years[grid.years.length - 1]}. Use as setas para percorrer as semanas.`,
+                           `Weekly calendar for ${cal.nome}, ${grid.years[0]} to ${grid.years[grid.years.length - 1]}. Use the arrow keys to move through the weeks.`)}
              onKeyDown={onKey} onBlur={() => { setFocus(null); hide(); }} data-testid="calendario-semanal">
           <HatchDefs />
           {cal.semanas.map((s, w) => Number(s.slice(0, 2)) <= 7 ? (
-            <text key={s} x={LEFT + w * (CW + GAP)} y={TOP - 7}>{MONTHS_SHORT[Number(s.slice(3, 5)) - 1]}</text>
+            <text key={s} x={LEFT + w * (CW + GAP)} y={TOP - 7}>{months[Number(s.slice(3, 5)) - 1]}</text>
           ) : null)}
           {grid.years.map((y, r) => (
             <g key={y}>
               <text x={LEFT - 6} y={TOP + r * (CH + GAP) + CH - 3} textAnchor="end" data-testid={`ano-${y}`}
                     className={onYear ? 'ano-clicavel' : undefined} onClick={onYear ? () => onYear(y) : undefined}
-                    onMouseMove={onYear ? (e) => show(e, <div>{yearFrom === y && yearTo === y ? 'Clique para voltar ao período completo' : `Clique para ver só ${y}`}</div>) : undefined}
+                    onMouseMove={onYear ? (e) => show(e, <div>{yearFrom === y && yearTo === y ? tr('Clique para voltar ao período completo', 'Click to return to the full period') : tr(`Clique para ver só ${y}`, `Click to see only ${y}`)}</div>) : undefined}
                     onMouseLeave={onYear ? hide : undefined}
                     style={{ fontWeight: y === cal.ano_atual.ano ? 700 : 400, fontVariantNumeric: 'tabular-nums' }}>{y}</text>
               {grid.cells[r].map((c, w) => (
@@ -100,24 +105,25 @@ export function WeekCalendar({ cal, yearFrom, yearTo, onYear }: { cal: TeamCalen
               {/* rótulo no trecho mais longo; ancorado à direita quando o trecho fica no fim do ano, para não sair do gráfico */}
               <text x={labelEnd ? LEFT + (labelSeg[1] + 1) * (CW + GAP) : LEFT + labelSeg[0] * (CW + GAP)} y={TOP - 26}
                     textAnchor={labelEnd ? 'end' : 'start'} style={{ fontWeight: 600, fill: 'var(--tinta)' }}>
-                Período crítico {pc.inicio}–{pc.fim}{segments.length > 1 ? ' (atravessa o ano)' : ''}
+                {tr('Período crítico', 'Critical period')} {criticalRange(pc)}{segments.length > 1 ? tr(' (atravessa o ano)', ' (spans the new year)') : ''}
               </text>
             </g>
           )}
         </svg>
       </div>
-      <ul className="legenda-linha" aria-label="Legenda do calendário">
-        <li><span className="amostra" style={{ background: RAMP[0] }} /> Nenhuma detecção</li>
+      <ul className="legenda-linha" aria-label={tr('Legenda do calendário', 'Calendar legend')}>
+        <li><span className="amostra" style={{ background: RAMP[0] }} /> {tr('Nenhuma detecção', 'No detections')}</li>
         {breaks.map((b, i) => (
-          <li key={i}><span className="amostra" style={{ background: RAMP[i + 1] }} /> até {grid.max < 20 ? fmt1(b) : fmtInt(b)}</li>
+          <li key={i}><span className="amostra" style={{ background: RAMP[i + 1] }} /> {tr('até', 'up to')} {grid.max < 20 ? fmt1(b) : fmtInt(b)}</li>
         ))}
-        <li><span className="amostra hachura" /> Sem dado (semana não publicada)</li>
-        <li><span className="amostra" style={{ background: 'transparent', border: '2px solid var(--tinta)' }} /> Período crítico</li>
+        <li><span className="amostra hachura" /> {tr('Sem dado (semana não publicada)', 'No data (week not published)')}</li>
+        <li><span className="amostra" style={{ background: 'transparent', border: '2px solid var(--tinta)' }} /> {tr('Período crítico', 'Critical period')}</li>
       </ul>
-      <p className="nota">Escala de raiz quadrada: poucas semanas concentram quase todo o fogo, e a raiz deixa visíveis os meses fracos. Unidade: detecções harmonizadas (equivalente MODIS) por semana.</p>
-      <TableToggle label="valores semanais">
+      <p className="nota">{tr('Escala de raiz quadrada: poucas semanas concentram quase todo o fogo, e a raiz deixa visíveis os meses fracos. Unidade: detecções harmonizadas (equivalente MODIS) por semana.',
+                              'Square-root scale: a few weeks hold almost all the fire, and the root keeps the weak months visible. Unit: harmonized detections (MODIS equivalent) per week.')}</p>
+      <TableToggle label={tr('valores semanais', 'weekly values')}>
         <table className="dados">
-          <thead><tr><th>Ano</th>{cal.semanas.map((s) => <th key={s}>{s}</th>)}</tr></thead>
+          <thead><tr><th>{tr('Ano', 'Year')}</th>{cal.semanas.map((s) => <th key={s}>{fmtDayMonth(s)}</th>)}</tr></thead>
           <tbody>
             {grid.years.map((y, r) => (
               <tr key={y}><td>{y}</td>{grid.cells[r].map((c, w) => (

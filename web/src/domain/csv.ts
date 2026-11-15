@@ -2,8 +2,11 @@
  * Exportação CSV dos resultados filtrados (RFC 4180, separador vírgula, ponto decimal, UTF-8 com BOM).
  * Cada linha diz de qual camada veio, que tipo de dado é e quais filtros a produziram.
  * MODIS e VIIRS aparecem em linhas separadas: nunca há uma coluna com a soma dos dois.
+ * Colunas e códigos são fixos (contrato); só `unidade` e `observacao` seguem o idioma da interface.
  */
 import type { Dataset, MetricId, SensorId, TeamCalendar } from '../data/types';
+import { dataText } from '../i18n/dataText';
+import { tr } from '../i18n/lang';
 import { type Filters, sensorsFor } from './filters';
 import { harmonizedSlice, monthRange, slice } from './series';
 
@@ -45,10 +48,10 @@ export function buildRows(ds: Dataset, f: Filters, teamCal: TeamCalendar | null)
           camada: 'A_equipe', tipo_dado: 'real', regiao_cod: teamCal.cod_mun, regiao_nome: teamCal.nome,
           periodo: `${y}-S${String(w).padStart(2, '0')}`, ano: y, semana: w,
           serie: 'harmonizada_equipe', metrica: 'deteccoes_harmonizadas',
-          unidade: 'detecções equivalentes MODIS por semana',
+          unidade: tr('detecções equivalentes MODIS por semana', 'MODIS-equivalent detections per week'),
           valor: semDado ? null : v,
-          observacao: semDado ? 'sem dado (semana ainda não publicada)'
-            : y <= 2021 ? 'MODIS observado' : 'VIIRS convertido pela equipe',
+          observacao: semDado ? tr('sem dado (semana ainda não publicada)', 'no data (week not yet published)')
+            : y <= 2021 ? tr('MODIS observado', 'MODIS observed') : tr('VIIRS convertido pela equipe', 'VIIRS converted by the team'),
           filtros,
         });
       });
@@ -67,7 +70,7 @@ export function buildRows(ds: Dataset, f: Filters, teamCal: TeamCalendar | null)
   const divisao = (year: number) =>
     s.harmonization.anos_ajuste.includes(year) ? 'ajuste' : s.harmonization.anos_avaliacao.includes(year) ? 'avaliacao' : '';
   const metric: MetricId = f.metric;
-  const unidade = s.manifest.metricas.find((m) => m.id === metric)?.rotulo ?? metric;
+  const unidade = dataText(s.manifest.metricas.find((m) => m.id === metric)?.rotulo) || metric;
   for (const sensor of sensorsFor(f.sensor)) {
     const vals = slice(region.series[sensor][metric], r);
     meses.forEach((m, i) => {
@@ -87,10 +90,11 @@ export function buildRows(ds: Dataset, f: Filters, teamCal: TeamCalendar | null)
         rows.push({
           camada: 'B_pipeline', tipo_dado: kind, regiao_cod: f.region, regiao_nome: region.nome, periodo: m,
           ano: y, mes: Number(m.slice(5, 7)), serie: 'VIIRS_NOAA20_ajustado_escala_MODIS_AQUA',
-          metrica: `dias_celula_${f.grid}`, unidade: 'dias-célula equivalentes MODIS/Aqua',
+          metrica: `dias_celula_${f.grid}`, unidade: tr('dias-célula equivalentes MODIS/Aqua', 'MODIS/Aqua-equivalent cell-days'),
           valor: h.estimate[i], valor_min: h.lo[i], valor_max: h.hi[i], divisao_harmonizacao: divisao(y),
           versao_produto: versions('VIIRS_NOAA20', y),
-          observacao: 'experimental; intervalo de 90 % aproximado e subestimado (ver metodologia)', filtros,
+          observacao: tr('experimental; intervalo de 90 % aproximado e subestimado (ver metodologia)',
+                         'experimental; approximate 90% interval, underestimated (see methodology)'), filtros,
         });
       });
     }

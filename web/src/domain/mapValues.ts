@@ -8,6 +8,8 @@
 import type { MultiPolygon, Polygon } from 'geojson';
 import type { Dataset, TeamIndexItem } from '../data/types';
 import type { Filters } from './filters';
+import { dataText } from '../i18n/dataText';
+import { tr } from '../i18n/lang';
 import { harmonizedSlice, monthRange, sensorValues, sum } from './series';
 
 export interface MapLayerValues {
@@ -41,7 +43,7 @@ export function activityValues(ds: Dataset, f: Filters): MapLayerValues | null {
   const r = monthRange(s.monthly.meses, f.yearFrom, f.yearTo);
   if (!r) return null;
   const values = new Map<string, number | null>();
-  const metricLabel = s.manifest.metricas.find((m) => m.id === f.metric)?.rotulo ?? f.metric;
+  const metricLabel = dataText(s.manifest.metricas.find((m) => m.id === f.metric)?.rotulo) || f.metric;
   const per1000 = (v: number, area: number) => (area > 0 ? (v / area) * 1000 : 0);
   let kind: MapLayerValues['kind'] = 'densidade';
   let label: string;
@@ -59,9 +61,14 @@ export function activityValues(ds: Dataset, f: Filters): MapLayerValues | null {
       values.set(cod, per1000(sum(sensorValues(region, f.sensor, f.metric, r)), region.area_km2));
     }
   }
-  if (f.view === 'harmonizado') label = `VIIRS ajustado (dias-célula equiv. MODIS) por 1.000 km², ${r.yearFrom}–${r.yearTo}`;
-  else if (kind === 'razao') label = `Quanto o VIIRS vê a mais: VIIRS ÷ MODIS (${metricLabel}), ${r.yearFrom}–${r.yearTo}`;
-  else label = `${f.sensor === 'MODIS_AQUA' ? 'MODIS/Aqua' : 'VIIRS/NOAA-20'}: ${metricLabel} por 1.000 km², ${r.yearFrom}–${r.yearTo}`;
+  const years = `${r.yearFrom}–${r.yearTo}`;
+  if (f.view === 'harmonizado') {
+    label = tr(`VIIRS ajustado (dias-célula equiv. MODIS) por 1.000 km², ${years}`, `Adjusted VIIRS (MODIS-equivalent cell-days) per 1,000 km², ${years}`);
+  } else if (kind === 'razao') {
+    label = tr(`Quanto o VIIRS vê a mais: VIIRS ÷ MODIS (${metricLabel}), ${years}`, `How much more VIIRS sees: VIIRS ÷ MODIS (${metricLabel}), ${years}`);
+  } else {
+    label = `${f.sensor === 'MODIS_AQUA' ? 'MODIS/Aqua' : 'VIIRS/NOAA-20'}: ${metricLabel} ${tr('por 1.000 km²', 'per 1,000 km²')}, ${years}`;
+  }
   const breaks = quantileBreaks([...values.values()].filter((x): x is number => x !== null));
   return { kind, label, values, breaks };
 }
@@ -99,7 +106,7 @@ export function meanDensityValues(index: TeamIndexItem[], areas: Map<string, num
   }
   return {
     kind: 'densidade',
-    label: 'Média anual 2003–2025 por 1.000 km²',
+    label: tr('Média anual 2003–2025 por 1.000 km²', 'Annual mean 2003–2025 per 1,000 km²'),
     values,
     breaks: quantileBreaks([...values.values()].filter((x): x is number => x !== null)),
   };

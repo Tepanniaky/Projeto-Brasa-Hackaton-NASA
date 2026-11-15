@@ -194,3 +194,58 @@ test.describe('celular', () => {
     await expect(page.getByTestId('numero-destaque')).toContainText('vezes acima');
   });
 });
+
+test.describe('idioma', () => {
+  test('seletor PT | EN troca a interface, preserva os filtros, vai para a URL e fica salvo', async ({ page }) => {
+    await page.goto('/?local=2911105&aba=cal');
+    await expect(page.getByTestId('seletor-idioma')).toBeVisible();
+    await expect(page.getByTestId('idioma-pt')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('idioma-en').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US');
+    await expect(page).toHaveURL(/lang=en/);
+    await expect(page).toHaveURL(/local=2911105/);
+    await expect(page.getByRole('tab', { name: 'Calendar', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('calendario-semanal')).toContainText('Critical period');
+    await expect(page.getByTestId('avisos')).toContainText('not an individual wildfire');
+    await expect(page.getByTestId('status-dados')).toContainText('Real data');
+    await expect(page).toHaveTitle(/Fire calendar/);
+    // a escolha fica salva: abrir sem ?lang continua em inglês
+    await page.goto('/');
+    await expect(page.getByTestId('numero-destaque')).toContainText('so far');
+    await page.getByTestId('idioma-pt').click();
+    await expect(page.getByRole('tab', { name: 'Ano corrente', exact: true })).toBeVisible();
+    await expect(page.getByTestId('numero-destaque')).toContainText('até esta data');
+    await expect(page).not.toHaveURL(/lang=/);
+  });
+
+  test('link com ?lang=en abre em inglês, com números e textos calculados em inglês', async ({ page }) => {
+    await page.goto('/?lang=en&local=2911105&de=2020&ate=2025&visao=harmonizado&aba=sens');
+    await expect(page.getByTestId('numeros-ajuste')).toContainText('1,866');
+    await expect(page.getByTestId('o-que-muda')).toContainText('What changes after the adjustment?');
+    await expect(page.getByTestId('o-que-muda')).toContainText('times more');
+    await expect(page.getByTestId('auditoria')).toContainText('Does the team series match what MODIS saw?');
+    await page.getByRole('tab', { name: 'Method', exact: true }).click();
+    await expect(page.getByTestId('metodologia')).toContainText('Limitations that change the reading');
+  });
+
+  test.describe('navegador em inglês', () => {
+    test.use({ locale: 'en-US' });
+    test('abre em inglês sem precisar escolher', async ({ page }) => {
+      await page.goto('/');
+      await expect(page.getByTestId('idioma-en')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.getByRole('tab', { name: 'Current year', exact: true })).toBeVisible();
+    });
+  });
+
+  test.describe('celular', () => {
+    test.use({ viewport: { width: 360, height: 740 } });
+    test('o seletor de idioma fica visível no cabeçalho', async ({ page }) => {
+      await page.goto('/');
+      const en = page.getByTestId('idioma-en');
+      await expect(en).toBeInViewport();
+      await expect(page.getByRole('button', { name: 'Mudar para o tema claro' })).toBeInViewport();
+      await en.click();
+      await expect(page.getByRole('button', { name: /Filters$/ })).toBeVisible();
+    });
+  });
+});

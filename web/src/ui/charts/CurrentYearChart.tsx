@@ -4,8 +4,9 @@
  */
 import { useState } from 'react';
 import type { AnomalyClass, TeamCalendar } from '../../data/types';
-import { ANOMALY_GLYPH, ANOMALY_LABEL } from '../../domain/calendar';
-import { fmt1, MONTHS_SHORT } from '../../domain/format';
+import { ANOMALY_GLYPH, anomalyLabel } from '../../domain/calendar';
+import { fmt1, fmtDayMonth, monthsShort } from '../../domain/format';
+import { getLang, tr } from '../../i18n/lang';
 import { niceMax, TableToggle, ticks, Tip, useChartWidth, useTip } from './common';
 
 const H = 230;
@@ -41,9 +42,9 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
     const s = cur.semanas.find((k) => k.semana === w);
     return (
       <div>
-        <strong>Semana de {cal.semanas[w]}</strong>
-        <div>{cur.ano}: {s ? `${fmt1(s.valor)} (${ANOMALY_GLYPH[s.classe]} ${ANOMALY_LABEL[s.classe].toLowerCase()})` : 'sem dado ainda'}</div>
-        <div>Normal (mediana): {fmt1(clim.p50[w])}; p75 {fmt1(clim.p75[w])}; p90 {fmt1(clim.p90[w])}</div>
+        <strong>{tr('Semana de', 'Week of')} {fmtDayMonth(cal.semanas[w])}</strong>
+        <div>{cur.ano}: {s ? `${fmt1(s.valor)} (${ANOMALY_GLYPH[s.classe]} ${anomalyLabel(s.classe).toLowerCase()})` : tr('sem dado ainda', 'no data yet')}</div>
+        <div>{tr('Normal (mediana)', 'Normal (median)')}: {fmt1(clim.p50[w])}; p75 {fmt1(clim.p75[w])}; p90 {fmt1(clim.p90[w])}</div>
       </div>
     );
   };
@@ -54,12 +55,14 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
     setHover(w);
     show(e, content(w));
   };
+  const months = monthsShort();
   const counts = cur.semanas.reduce<Record<string, number>>((a, s) => ({ ...a, [s.classe]: (a[s.classe] ?? 0) + 1 }), {});
 
   return (
     <>
       <svg ref={ref} className="grafico" viewBox={`0 0 ${W} ${H}`} role="img" data-testid="grafico-ano-corrente"
-           aria-label={`Semanas de ${cur.ano} comparadas ao normal de ${cal.linha_de_base[0]} a ${cal.linha_de_base[1]}`}>
+           aria-label={tr(`Semanas de ${cur.ano} comparadas ao normal de ${cal.linha_de_base[0]} a ${cal.linha_de_base[1]}`,
+                         `Weeks of ${cur.ano} compared with the ${cal.linha_de_base[0]}–${cal.linha_de_base[1]} normal`)}>
         {ticks(ymax).map((t) => (
           <g key={t}>
             <line className="grade" x1={PAD.l} x2={PAD.l + iw} y1={y(t)} y2={y(t)} />
@@ -71,8 +74,9 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
           if (Number(s.slice(0, 2)) > 7) return null;
           const m = Number(s.slice(3, 5)) - 1;
           // estreito: só meses ímpares (jan, mar, …) com nome curto, para os rótulos não se sobreporem
-          if (iw / 12 < 36) return m % 2 ? null : <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{MONTHS_SHORT[m]}</text>;
-          return <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{s.slice(3)}/{String(cur.ano).slice(2)}</text>;
+          if (iw / 12 < 36) return m % 2 ? null : <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{months[m]}</text>;
+          // em inglês, "Jan '26" (mês/ano numérico seria ambíguo com dia/mês)
+          return <text key={s} x={x(w)} y={H - 10} textAnchor="middle">{getLang() === 'en' ? `${months[m]} ’${String(cur.ano).slice(2)}` : `${s.slice(3)}/${String(cur.ano).slice(2)}`}</text>;
         })}
         <path d={band} fill="var(--normal)" opacity={0.35} />
         <path d={med} fill="none" stroke="var(--tinta-3)" strokeWidth={1.5} />
@@ -80,7 +84,7 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
               stroke="var(--tinta-3)" strokeDasharray="2 3" />
         {/* perto do fim do ano o rótulo vai para a esquerda da linha, para não sair do gráfico */}
         <text x={x(cur.ultima_semana_completa) + (cur.ultima_semana_completa > 36 ? 0 : 8)} y={PAD.t + 10}
-              textAnchor={cur.ultima_semana_completa > 36 ? 'end' : 'start'}>sem dado depois daqui</text>
+              textAnchor={cur.ultima_semana_completa > 36 ? 'end' : 'start'}>{tr('sem dado depois daqui', 'no data after this point')}</text>
         <path d={line} fill="none" stroke="var(--tinta)" strokeWidth={2} />
         {cur.semanas.map((s) => <Marker key={s.semana} cls={s.classe} x={x(s.semana)} y={y(s.valor)} />)}
         {hover !== null && <line x1={x(hover)} x2={x(hover)} y1={PAD.t} y2={PAD.t + ih} stroke="var(--tinta-3)" />}
@@ -89,21 +93,22 @@ export function CurrentYearChart({ cal }: { cal: TeamCalendar }) {
       </svg>
       <ul className="legenda-linha">
         <li><span className="chave-linha" style={{ color: 'var(--tinta)' }} /> {cur.ano}</li>
-        <li><span className="chave-linha" style={{ color: 'var(--tinta-3)' }} /> Mediana {cal.linha_de_base[0]}–{cal.linha_de_base[1]}</li>
-        <li><span className="chave-faixa" style={{ background: 'var(--normal)', opacity: 0.5 }} /> Faixa mediana a percentil 90</li>
+        <li><span className="chave-linha" style={{ color: 'var(--tinta-3)' }} /> {tr('Mediana', 'Median')} {cal.linha_de_base[0]}–{cal.linha_de_base[1]}</li>
+        <li><span className="chave-faixa" style={{ background: 'var(--normal)', opacity: 0.5 }} /> {tr('Faixa mediana a percentil 90', 'Band from median to 90th percentile')}</li>
         {(['muito_acima', 'acima', 'abaixo'] as AnomalyClass[]).map((c) => (
-          <li key={c}><span style={{ color: COLOR[c] }}>{ANOMALY_GLYPH[c]}</span> {ANOMALY_LABEL[c]} ({counts[c] ?? 0} sem.)</li>
+          <li key={c}><span style={{ color: COLOR[c] }}>{ANOMALY_GLYPH[c]}</span> {anomalyLabel(c)} ({counts[c] ?? 0} {tr('sem.', 'wk.')})</li>
         ))}
       </ul>
-      <p className="nota">Semanas com menos de 3 detecções nunca são marcadas como anômalas. Valores de {cur.ano} são preliminares.</p>
-      <TableToggle label={`semanas de ${cur.ano}`}>
+      <p className="nota">{tr(`Semanas com menos de 3 detecções nunca são marcadas como anômalas. Valores de ${cur.ano} são preliminares.`,
+                              `Weeks with fewer than 3 detections are never flagged as anomalous. ${cur.ano} values are preliminary.`)}</p>
+      <TableToggle label={tr(`semanas de ${cur.ano}`, `weeks of ${cur.ano}`)}>
         <table className="dados">
-          <thead><tr><th>Semana</th><th>{cur.ano}</th><th>Mín.</th><th>Máx.</th><th>Mediana</th><th>p90</th><th>Classe</th></tr></thead>
+          <thead><tr><th>{tr('Semana', 'Week')}</th><th>{cur.ano}</th><th>{tr('Mín.', 'Min.')}</th><th>{tr('Máx.', 'Max.')}</th><th>{tr('Mediana', 'Median')}</th><th>p90</th><th>{tr('Classe', 'Class')}</th></tr></thead>
           <tbody>{cur.semanas.map((s) => (
             <tr key={s.semana} className={s.classe === 'muito_acima' || s.classe === 'acima' ? 'marcado' : ''}>
-              <td>{s.inicio}</td><td>{fmt1(s.valor)}</td><td>{fmt1(s.min)}</td><td>{fmt1(s.max)}</td>
+              <td>{fmtDayMonth(s.inicio)}</td><td>{fmt1(s.valor)}</td><td>{fmt1(s.min)}</td><td>{fmt1(s.max)}</td>
               <td>{fmt1(clim.p50[s.semana])}</td><td>{fmt1(clim.p90[s.semana])}</td>
-              <td>{ANOMALY_GLYPH[s.classe]} {ANOMALY_LABEL[s.classe]}</td>
+              <td>{ANOMALY_GLYPH[s.classe]} {anomalyLabel(s.classe)}</td>
             </tr>
           ))}</tbody>
         </table>

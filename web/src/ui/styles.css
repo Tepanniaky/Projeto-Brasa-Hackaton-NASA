@@ -169,6 +169,20 @@ code, .hash { font: 400 12px var(--fonte-mono); background: var(--surface-2); pa
   min-height: 34px; padding: 4px 11px; cursor: pointer; font-size: 13.5px; white-space: nowrap; transition: background 0.15s;
 }
 .botao-topo:hover { background: var(--carvao-3); }
+/* Seletor de idioma PT | EN: sempre visível, inclusive no celular */
+.idioma {
+  display: inline-flex; align-items: center; flex: none; border: 1px solid var(--carvao-3); border-radius: var(--raio);
+  overflow: hidden; color: var(--sobre-carvao-2);
+}
+.idioma svg { margin: 0 4px 0 9px; flex: none; }
+.idioma button {
+  background: transparent; border: 0; color: var(--sobre-carvao-2); min-height: 34px; min-width: 38px; padding: 4px 8px;
+  cursor: pointer; font-size: 13.5px; font-weight: 600; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;
+}
+.idioma button + button { border-left: 1px solid var(--carvao-3); }
+.idioma button[aria-pressed='true'] { background: var(--sobre-carvao); color: var(--carvao); }
+.idioma button:hover:not([aria-pressed='true']) { background: var(--carvao-3); color: var(--sobre-carvao); }
+.idioma button:focus-visible { outline: 2px solid var(--brasa-marca); outline-offset: -2px; }
 
 /* ---------- Filtros ---------- */
 .resumo-filtros { display: none; }
@@ -410,6 +424,9 @@ details.metodo[open] summary { margin-bottom: 6px; }
   .status span, .botao-topo.texto { display: none; }
   .status { padding: 6px; }
   .topo { gap: 8px; }
+  /* o seletor PT | EN continua visível; só o globo sai para caber ao lado do tema */
+  .idioma svg { display: none; }
+  .topo > * { flex-shrink: 0; }
   .resumo-filtros {
     display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px;
     background: var(--carvao-2); color: var(--sobre-carvao); border: 0; border-bottom: 1px solid #000;
@@ -454,6 +471,12 @@ details.metodo[open] summary { margin-bottom: 6px; }
   .maplibregl-ctrl-attrib { font-size: 10.5px; }
   .painel { padding: 14px 12px 32px; }
   .secao { padding: 14px 12px; }
+}
+
+/* Celular estreito (≤ 400 px): logo menor para logo, status, PT | EN e tema caberem numa linha */
+@media (max-width: 400px) {
+  .marca-logo { width: 118px; height: 31px; }
+  .topo { gap: 6px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { tr } from '../../i18n/lang';
 
 export function niceMax(v: number): number {
   if (v <= 0) return 1;
@@ -61,7 +62,7 @@ export function TableToggle({ label, children }: { label: string; children: Reac
     <div>
       <button type="button" className="botao-sec" aria-expanded={open} onClick={() => setOpen((o) => !o)}
               style={{ marginTop: 10, fontSize: 13 }}>
-        {open ? 'Ocultar tabela' : `Ver tabela: ${label}`}
+        {open ? tr('Ocultar tabela', 'Hide table') : `${tr('Ver tabela', 'Show table')}: ${label}`}
       </button>
       {open && <div className="tabela-wrap">{children}</div>}
     </div>
