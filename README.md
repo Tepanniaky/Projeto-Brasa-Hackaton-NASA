@@ -13,33 +13,52 @@ sempre separados:
 - uma harmonização experimental com treino e avaliação separados;
 - uma auditoria independente da série da equipe.
 
-![Bahia: mapa de alertas, cartões e ano corrente](docs/img/inicio-bahia.png)
+## Telas
 
-| Calendário 2003–2026 e mapa VIIRS ÷ MODIS | "O que muda após o ajuste?" em Formosa do Rio Preto |
+![Bahia no tema escuro: mapa de alerta recente, total por ano e o ano corrente comparado ao normal](docs/img/inicio-bahia.png)
+
+| Calendário ano × semana (Formosa do Rio Preto) | "Mais fogo ou só enxergando melhor?" após o ajuste |
 |---|---|
-| ![](docs/img/mapa-razao-calendario.png) | ![](docs/img/harmonizado-formosa.png) |
+| ![Calendário 2003–2026 com o período crítico destacado](docs/img/calendario-formosa.png) | ![MODIS/Aqua, VIIRS bruto e VIIRS ajustado, 2020–2025](docs/img/sensores-harmonizado.png) |
+
+| Tema claro: mapa por sensor (VIIRS ÷ MODIS) | Celular |
+|---|---|
+| ![Tema claro com o mapa da razão VIIRS ÷ MODIS, 2020–2025](docs/img/tema-claro.png) | <img src="docs/img/celular.png" alt="Versão para celular com filtros em gaveta" width="300"> |
 
 ## O que funciona
 
-- **Mapa** dos 417 municípios (MapLibre).
-  - Modo "alerta recente" (série da equipe) e modo "atividade no período" por
-    sensor.
-  - Com ambos os sensores, mostra a razão VIIRS ÷ MODIS, nunca a soma.
+- **Identidade BRASA**: logo nova, tema escuro como padrão e tema claro
+  (para sala iluminada e impressão) no botão ◐. A escolha fica salva no
+  navegador.
+- **Mapa** dos 417 municípios (MapLibre), com quatro modos:
+  - **Alerta recente**: últimas 4 semanas comparadas ao normal da semana
+    (série da equipe);
+  - **Média anual** por 1.000 km²;
+  - **2026 ÷ normal**: o ano corrente dividido pelo normal;
+  - **Por sensor**: atividade no período por sensor. Com ambos os sensores,
+    mostra a razão VIIRS ÷ MODIS, nunca a soma.
   - Clique ou busque um município para selecioná-lo.
+- **Total por ano** (2003–2026) abaixo do mapa: arraste sobre as barras para
+  escolher o período; a tabela com os totais fica a um clique.
 - **Filtros compartilhados**: local, período, visão (original ou harmonizada),
-  sensor e métrica. Valem para mapa, calendários, gráficos e CSV, e ficam
-  espelhados na URL.
-- **Calendário ano × semana** (2003–2026), com período crítico, escala de raiz
-  quadrada e "sem dado" diferente de "sem detecção".
-- **Calendário mês × ano por sensor** (2020–2025).
-- **Ano corrente** sobre a faixa do normal, com classes de anomalia (glifo e
-  cor) e número de destaque.
-- **Série anual** com a faixa de incerteza da conversão.
-- **MODIS × VIIRS**: séries mensais lado a lado. A visão harmonizada responde
-  "O que muda após o ajuste?" com textos calculados a partir dos valores.
-- **Painel de metodologia**: fontes com SHA-256, critérios de qualidade por
-  sensor e ano, deriva orbital medida, avaliação do ajuste com marcações
-  automáticas, e limitações.
+  sensor e métrica. Valem para mapa, calendários, gráficos e CSV, ficam
+  espelhados na URL e voltam ao padrão com "Restaurar filtros".
+- **Painel em quatro abas**, cada uma respondendo uma pergunta:
+  - **Ano corrente** ("2026 está fora do normal?"): curva semanal sobre a
+    faixa mediana–p90, classes de anomalia (glifo e cor) e frase de destaque;
+  - **Calendário** ("Quando costuma queimar?"): ano × semana (2003–2026), com
+    período crítico, escala de raiz quadrada e "sem dado" diferente de "sem
+    detecção". Clique num ano para isolá-lo. Inclui o calendário mês × ano
+    por sensor (2020–2025);
+  - **Sensores** ("Mais fogo ou só enxergando melhor?"): MODIS/Aqua, VIIRS
+    bruto e VIIRS ajustado, em alternância ou lado a lado. A visão
+    harmonizada responde "O que muda após o ajuste?" com textos calculados a
+    partir dos valores, e confere a série da equipe com o MODIS observado;
+  - **Método** ("Como ler estes dados"): fontes com SHA-256, critérios de
+    qualidade por sensor e ano, deriva orbital medida, avaliação do ajuste
+    com marcações automáticas, e limitações.
+- **Responsivo**: no celular os filtros abrem numa gaveta e o conteúdo vem
+  logo abaixo do mapa; calendários e gráficos se ajustam à largura.
 - **Exportação CSV** do recorte filtrado, com camada, tipo de dado, versão do
   produto e filtros em cada linha.
 - **Estados** de carregamento, erro, município sem detecção, período sem dados
@@ -118,8 +137,8 @@ colunas):
 
 ```bash
 cd pipeline && .venv/bin/python -m pytest -q        # 19 testes: qualidade, dia local, agregação, separação temporal, auditoria, exemplo e2e
-cd web && npm test                                  # 16 testes unitários: filtros, recortes, calendário, CSV, mapa, explicações
-cd web && npm run build && PLAYWRIGHT_HTML_OPEN=never npx playwright test   # 9 testes E2E nos dados reais
+cd web && npm test                                  # 24 testes unitários: filtros, recortes, calendário, CSV, mapa, explicações
+cd web && npm run build && PLAYWRIGHT_HTML_OPEN=never npx playwright test   # 12 testes E2E nos dados reais (inclui temas e celular)
 ```
 
 ## Estrutura
